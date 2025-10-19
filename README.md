@@ -1,98 +1,356 @@
+# CMS Email System
+
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+  <img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" />
 </p>
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+## Giới thiệu
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+**CMS Email System** là một hệ thống quản lý email toàn diện, được xây dựng dựa trên kiến trúc của **Zoho Mail**. Hệ thống cung cấp đầy đủ các tính năng để quản lý email chuyên nghiệp, bao gồm gửi/nhận email, quản lý danh bạ, lịch làm việc, và nhiều tính năng nâng cao khác.
 
-## Description
+## Tech Stack
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+### Backend Framework
+- **NestJS** v11.0.1 - Progressive Node.js framework
+- **TypeScript** v5.7.3 - Type-safe JavaScript
+- **Node.js** - Runtime environment
 
-## Project setup
+### Database & Storage
+- **PostgreSQL** - Primary database
+- **Redis** - Caching & session management
+- **TypeORM** - ORM for database operations
 
+### Email Protocols
+- **SMTP** - Gửi email (Simple Mail Transfer Protocol)
+- **IMAP** - Nhận email (Internet Message Access Protocol)
+- **POP3** - Alternative email retrieval protocol
+
+### Authentication & Security
+- **JWT** - JSON Web Tokens
+- **Passport.js** - Authentication middleware
+- **bcrypt** - Password hashing
+- **Helmet** - Security headers
+
+### Queue & Background Jobs
+- **Bull** - Redis-based queue for async tasks
+- **Bull Board** - Queue monitoring dashboard
+
+### File Storage
+- **Multer** - File upload handling
+- **AWS S3** (optional) - Cloud storage for attachments
+
+### Testing
+- **Jest** - Unit & integration testing
+- **Supertest** - E2E API testing
+
+### Development Tools
+- **ESLint** - Code linting
+- **Prettier** - Code formatting
+- **Husky** - Git hooks
+- **Docker** - Containerization
+
+## Tính năng chính
+
+### 📧 Email Management
+- ✅ Gửi email (đơn/hàng loạt) với rich text editor
+- ✅ Nhận email tự động qua IMAP/POP3
+- ✅ Đọc, trả lời, chuyển tiếp email
+- ✅ Lưu nháp (auto-save)
+- ✅ Xóa, khôi phục email
+- ✅ Email threading (xem theo cuộc hội thoại)
+- ✅ Đánh dấu quan trọng/đã đọc
+
+### 📁 Folder Management
+- ✅ Inbox, Sent, Drafts, Trash, Spam
+- ✅ Tạo folder tùy chỉnh
+- ✅ Di chuyển email giữa các folder
+- ✅ Quản lý folder hierarchy
+
+### 👥 Contact Management
+- ✅ Thêm, sửa, xóa danh bạ
+- ✅ Nhóm liên hệ
+- ✅ Import/Export contacts (CSV, vCard)
+- ✅ Tìm kiếm nhanh contact
+
+### 📅 Calendar Integration
+- ✅ Tạo sự kiện, cuộc họp
+- ✅ Gửi lời mời tham gia
+- ✅ Reminder & notifications
+- ✅ Xem lịch theo ngày/tuần/tháng
+
+### 🔍 Advanced Search
+- ✅ Tìm kiếm full-text
+- ✅ Lọc theo người gửi, ngày, folder
+- ✅ Tìm kiếm trong attachments
+- ✅ Lưu bộ lọc tìm kiếm
+
+### 🏷️ Labels & Categories
+- ✅ Tạo nhãn màu sắc
+- ✅ Gán nhiều nhãn cho email
+- ✅ Lọc email theo nhãn
+
+### 🤖 Email Filters & Rules
+- ✅ Tự động phân loại email
+- ✅ Auto-reply (trả lời tự động)
+- ✅ Forward rules
+- ✅ Spam detection
+
+### 📎 Attachments
+- ✅ Upload nhiều file (max 25MB/file)
+- ✅ Preview file (PDF, images, docs)
+- ✅ Virus scanning
+- ✅ Cloud storage integration
+
+### 📝 Email Templates
+- ✅ Tạo template tùy chỉnh
+- ✅ Variables & placeholders
+- ✅ Template categories
+- ✅ Quick insert templates
+
+### 👤 User Management
+- ✅ Đăng ký, đăng nhập
+- ✅ Multi-account support
+- ✅ Profile management
+- ✅ Email signatures
+- ✅ Settings & preferences
+
+## Cài đặt
+
+### Yêu cầu
+- Node.js >= 18.x
+- PostgreSQL >= 14.x
+- Redis >= 6.x
+- pnpm >= 8.x
+
+### Cài đặt dependencies
 ```bash
-$ pnpm install
+pnpm install
 ```
 
-## Compile and run the project
-
+### Cấu hình môi trường
+Tạo file `.env` từ `.env.example`:
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+cp .env.example .env
 ```
 
-## Run tests
+Cấu hình các biến môi trường:
+```env
+# Database
+DATABASE_HOST=localhost
+DATABASE_PORT=5432
+DATABASE_USER=postgres
+DATABASE_PASSWORD=your_password
+DATABASE_NAME=cms_email_system
+
+# Redis
+REDIS_HOST=localhost
+REDIS_PORT=6379
+
+# JWT
+JWT_SECRET=your_jwt_secret
+JWT_EXPIRES_IN=1d
+JWT_REFRESH_SECRET=your_refresh_secret
+JWT_REFRESH_EXPIRES_IN=7d
+
+# SMTP (cho gửi email)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your_email@gmail.com
+SMTP_PASSWORD=your_app_password
+
+# IMAP (cho nhận email)
+IMAP_HOST=imap.gmail.com
+IMAP_PORT=993
+IMAP_SECURE=true
+IMAP_USER=your_email@gmail.com
+IMAP_PASSWORD=your_app_password
+
+# Application
+APP_PORT=3000
+APP_URL=http://localhost:3000
+```
+
+### Chạy migration
+```bash
+pnpm run migration:run
+```
+
+### Khởi động ứng dụng
+
+#### Development mode
+```bash
+pnpm run start:dev
+```
+
+#### Production mode
+```bash
+pnpm run build
+pnpm run start:prod
+```
+
+#### Với Docker
+```bash
+docker-compose up -d
+```
+
+## Chạy Tests
 
 ```bash
-# unit tests
-$ pnpm run test
+# Unit tests
+pnpm run test
 
-# e2e tests
-$ pnpm run test:e2e
+# E2E tests
+pnpm run test:e2e
 
-# test coverage
-$ pnpm run test:cov
+# Test coverage
+pnpm run test:cov
 ```
+
+## API Documentation
+
+API documentation được tạo tự động với Swagger:
+```
+http://localhost:3000/api/docs
+```
+
+## Cấu trúc Project
+
+```
+cms-email-system/
+├── src/
+│   ├── modules/
+│   │   ├── auth/           # Authentication & Authorization
+│   │   ├── user/           # User management
+│   │   ├── email/          # Email CRUD operations
+│   │   ├── folder/         # Folder management
+│   │   ├── contact/        # Contact management
+│   │   ├── calendar/       # Calendar & events
+│   │   ├── label/          # Labels & tags
+│   │   ├── filter/         # Email filters & rules
+│   │   ├── template/       # Email templates
+│   │   ├── attachment/     # File uploads
+│   │   └── search/         # Search functionality
+│   ├── common/
+│   │   ├── decorators/     # Custom decorators
+│   │   ├── filters/        # Exception filters
+│   │   ├── guards/         # Auth guards
+│   │   ├── interceptors/   # HTTP interceptors
+│   │   ├── pipes/          # Validation pipes
+│   │   └── utils/          # Utility functions
+│   ├── config/             # Configuration files
+│   ├── database/           # Database migrations & seeds
+│   ├── mail/               # SMTP/IMAP services
+│   ├── queue/              # Bull queue processors
+│   └── main.ts             # Application entry point
+├── docs/                   # Documentation
+│   ├── ARCHITECTURE.md     # System architecture
+│   ├── API_DESIGN.md       # API specifications
+│   ├── DATABASE_SCHEMA.md  # Database design
+│   ├── DEVELOPMENT.md      # Development guide
+│   └── FEATURES.md         # Feature specifications
+├── test/                   # Test files
+├── docker/                 # Docker configurations
+└── scripts/                # Utility scripts
+```
+
+## Documentation
+
+Xem thêm tài liệu chi tiết:
+
+- [📐 Kiến trúc hệ thống](docs/ARCHITECTURE.md)
+- [🔌 API Design](docs/API_DESIGN.md)
+- [🗄️ Database Schema](docs/DATABASE_SCHEMA.md)
+- [💻 Development Guide](docs/DEVELOPMENT.md)
+- [✨ Features Specification](docs/FEATURES.md)
 
 ## Deployment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
+### Docker Deployment
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+# Build image
+docker build -t cms-email-system .
+
+# Run container
+docker run -p 3000:3000 --env-file .env cms-email-system
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+### Production Checklist
+- [ ] Set proper environment variables
+- [ ] Enable HTTPS/SSL
+- [ ] Configure firewall rules
+- [ ] Setup database backups
+- [ ] Enable monitoring & logging
+- [ ] Configure rate limiting
+- [ ] Setup CDN for static assets
+- [ ] Enable Redis persistence
 
-## Resources
+## Performance & Scalability
 
-Check out a few resources that may come in handy when working with NestJS:
+- **Horizontal Scaling**: Stateless API design cho phép scale dễ dàng
+- **Caching**: Redis cache cho hot data
+- **Queue System**: Bull queue xử lý async tasks
+- **Database Indexing**: Optimized indexes cho search performance
+- **CDN**: Static assets served via CDN
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## Security Features
 
-## Support
+- 🔐 JWT authentication với refresh tokens
+- 🛡️ CORS protection
+- 🔒 Helmet security headers
+- 🚫 Rate limiting (chống DDoS)
+- ✅ Input validation với class-validator
+- 🔑 Password hashing với bcrypt
+- 📧 Email verification
+- 🔐 2FA (Two-factor authentication)
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Roadmap
 
-## Stay in touch
+### Phase 1 (Q1 2025) - Core Features
+- [x] Project setup & architecture
+- [ ] Authentication & Authorization
+- [ ] Email send/receive (SMTP/IMAP)
+- [ ] Folder management
+- [ ] Basic search
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+### Phase 2 (Q2 2025) - Advanced Features
+- [ ] Contact management
+- [ ] Calendar integration
+- [ ] Labels & filters
+- [ ] Email templates
+- [ ] Attachments handling
+
+### Phase 3 (Q3 2025) - Enterprise Features
+- [ ] Multi-account support
+- [ ] Advanced search & AI
+- [ ] Email analytics
+- [ ] Backup & restore
+- [ ] Admin dashboard
+
+### Phase 4 (Q4 2025) - Optimization
+- [ ] Performance optimization
+- [ ] Mobile app integration
+- [ ] Third-party integrations
+- [ ] Advanced security features
+
+## Contributing
+
+Vui lòng đọc [CONTRIBUTING.md](CONTRIBUTING.md) để biết quy trình đóng góp cho project.
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+This project is [UNLICENSED](LICENSE).
+
+## Support & Contact
+
+- **Issues**: [GitHub Issues](https://github.com/your-org/cms-email-system/issues)
+- **Email**: support@yourdomain.com
+- **Documentation**: [Wiki](https://github.com/your-org/cms-email-system/wiki)
+
+## Credits
+
+Developed with ❤️ using [NestJS](https://nestjs.com/)
+
+---
+
+**Note**: Đây là project đang trong giai đoạn phát triển. Một số tính năng có thể chưa hoàn thiện.
