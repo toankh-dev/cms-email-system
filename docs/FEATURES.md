@@ -1,8 +1,9 @@
 # Features Specification - CMS Email System
 
-## Tổng quan
 
-Document này mô tả chi tiết các tính năng của hệ thống Email Management, user flows, và use cases.
+## Overview
+
+This document details the features of the Email Management system, user flows, and use cases.
 
 ---
 
@@ -10,8 +11,9 @@ Document này mô tả chi tiết các tính năng của hệ thống Email Mana
 
 ### 1.1. Email Composer
 
-**Mô tả:**
-Soạn email mới với rich text editor hỗ trợ formatting, emoji, và attachments.
+
+**Description:**
+Compose a new email with a rich text editor supporting formatting, emojis, and attachments.
 
 **User Flow:**
 ```
@@ -36,11 +38,11 @@ Soạn email mới với rich text editor hỗ trợ formatting, emoji, và atta
 ```
 
 **Technical Details:**
-- Rich text editor: TinyMCE, CKEditor, hoặc Quill
+- Rich text editor: TinyMCE, CKEditor, or Quill
 - Max body size: 10MB
 - Auto-save: Debounced 30s
-- Attachment upload: Chunked upload cho files lớn
-- Draft saved in `emails` table với `is_draft=true`
+- Attachment upload: Chunked upload for large files
+- Draft saved in `emails` table with `is_draft=true`
 
 **API Endpoints:**
 - `POST /api/v1/emails/send`
@@ -49,10 +51,11 @@ Soạn email mới với rich text editor hỗ trợ formatting, emoji, và atta
 
 ---
 
+
 ### 1.2. Receive Emails (IMAP)
 
-**Mô tả:**
-Tự động nhận email từ email server qua IMAP protocol.
+**Description:**
+Automatically receive emails from the email server via the IMAP protocol.
 
 **User Flow:**
 ```
@@ -94,10 +97,11 @@ export class EmailFetchProcessor {
 
 ---
 
+
 ### 1.3. Email Threading (Conversation View)
 
-**Mô tả:**
-Nhóm các email có liên quan thành một conversation (thread).
+**Description:**
+Group related emails into a conversation (thread).
 
 **User Flow:**
 ```
@@ -145,10 +149,11 @@ function detectThread(email: Email): string {
 
 ---
 
+
 ### 1.4. Email Search
 
-**Mô tả:**
-Tìm kiếm email với full-text search và advanced filters.
+**Description:**
+Search emails with full-text search and advanced filters.
 
 **User Flow:**
 ```
@@ -259,22 +264,23 @@ Invalidate folder cache
 
 ---
 
+
 ## 2. Folder Management
 
 ### 2.1. System Folders
 
 **Default Folders:**
-- **Inbox**: Nơi nhận email mới
-- **Sent**: Email đã gửi
-- **Drafts**: Email nháp (chưa gửi)
-- **Trash**: Email đã xóa (soft delete)
-- **Spam**: Email spam (auto-detected hoặc manual)
-- **Archive**: Email lưu trữ (optional)
+- **Inbox**: Where new emails are received
+- **Sent**: Sent emails
+- **Drafts**: Draft emails (not sent)
+- **Trash**: Deleted emails (soft delete)
+- **Spam**: Spam emails (auto-detected or manual)
+- **Archive**: Archived emails (optional)
 
 **Rules:**
-- System folders không thể xóa
-- Có thể rename (optional)
-- Order cố định
+- System folders cannot be deleted
+- Can be renamed (optional)
+- Fixed order
 
 ### 2.2. Custom Folders
 
@@ -306,8 +312,9 @@ Invalidate folder cache
 
 ### 3.1. Labels
 
-**Mô tả:**
-Tags/labels để categorize emails (many-to-many relationship).
+
+**Description:**
+Tags/labels to categorize emails (many-to-many relationship).
 
 **User Flow:**
 ```
@@ -339,8 +346,9 @@ Tags/labels để categorize emails (many-to-many relationship).
 
 ### 4.1. Auto-Categorization
 
-**Mô tả:**
-Tự động phân loại email dựa trên rules.
+
+**Description:**
+Automatically categorize emails based on rules.
 
 **User Flow:**
 ```
@@ -395,8 +403,9 @@ Tự động phân loại email dựa trên rules.
 
 ### 4.2. Spam Detection
 
-**Mô tả:**
-Tự động phát hiện và lọc email spam.
+
+**Description:**
+Automatically detect and filter spam emails.
 
 **Methods:**
 
@@ -433,9 +442,9 @@ function isSpam(email: Email): boolean {
 ```
 
 **2. ML-based (Future):**
-- Train model với spam/ham dataset
+- Train model with spam/ham dataset
 - Feature extraction: keywords, link density, sender reputation
-- Classification: Naive Bayes, SVM, hoặc Neural Network
+- Classification: Naive Bayes, SVM, or Neural Network
 
 **User Actions:**
 - Mark as spam (moves to Spam folder)
@@ -446,8 +455,9 @@ function isSpam(email: Email): boolean {
 
 ### 4.3. Auto-Reply
 
-**Mô tả:**
-Tự động trả lời email dựa trên conditions.
+
+**Description:**
+Automatically reply to emails based on conditions.
 
 **Use Cases:**
 - Out of office message
@@ -963,9 +973,10 @@ export class ScheduledEmailProcessor {
 
 ---
 
+
 ## Summary
 
-CMS Email System cung cấp đầy đủ tính năng của một email client hiện đại:
+CMS Email System provides a full set of features of a modern email client:
 
 ✅ **Core Features:**
 - Email send/receive (SMTP/IMAP)
@@ -989,7 +1000,7 @@ CMS Email System cung cấp đầy đủ tính năng của một email client hi
 - Mobile app
 - Team collaboration
 - Advanced analytics
-- Integration với third-party services (Slack, Trello, etc.)
+- Integration with third-party services (Slack, Trello, etc.)
 
 ---
 

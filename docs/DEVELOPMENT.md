@@ -29,43 +29,14 @@ node --version
 # pnpm (>= 8.x)
 npm install -g pnpm
 pnpm --version
-
-# Docker & Docker Compose
-docker --version
-docker-compose --version
-
-# Git
-git --version
 ```
 
-### 2. Clone Repository
-
-```bash
-git clone <repository-url>
-cd cms-email-system
-```
-
-### 3. Install Dependencies
-
-```bash
-pnpm install
-```
-
-### 4. Setup Database (Option 1: Docker)
+### 2. Setup Database (Option 1: Docker)
 
 Use Docker Compose to setup PostgreSQL and Redis:
 
-```bash
-# Create docker-compose.yml if not exists
-docker-compose up -d
-
-# Check containers
-docker-compose ps
-```
-
 **docker-compose.yml:**
 ```yaml
-version: '3.8'
 
 services:
   postgres:
@@ -93,39 +64,7 @@ volumes:
   redis_data:
 ```
 
-### 5. Setup Database (Option 2: Local)
-
-Install PostgreSQL and Redis locally:
-
-**PostgreSQL:**
-```bash
-# macOS
-brew install postgresql@15
-brew services start postgresql@15
-
-# Ubuntu/Debian
-sudo apt install postgresql-15
-sudo systemctl start postgresql
-```
-
-**Redis:**
-```bash
-# macOS
-brew install redis
-brew services start redis
-
-# Ubuntu/Debian
-sudo apt install redis-server
-sudo systemctl start redis
-```
-
-### 6. Environment Variables
-
-Create `.env` file from `.env.example`:
-
-```bash
-cp .env.example .env
-```
+### 3. Environment Variables
 
 Configure `.env`:
 
@@ -190,7 +129,7 @@ QUEUE_REDIS_PORT=6379
 LOG_LEVEL=debug
 ```
 
-### 7. Run Migrations
+### 4. Run Migrations
 
 ```bash
 # Generate initial migration
@@ -203,13 +142,13 @@ pnpm run migration:run
 pnpm run migration:show
 ```
 
-### 8. Seed Database (Optional)
+### 5. Seed Database (Optional)
 
 ```bash
 pnpm run seed
 ```
 
-### 9. Start Development Server
+### 6. Start Development Server
 
 ```bash
 # Start in watch mode
@@ -345,180 +284,12 @@ cms-email-system/
 
 ---
 
-## Development Workflow
-
-### 1. Creating a New Feature
-
-**Step 1: Create a new branch**
-```bash
-git checkout develop
-git pull origin develop
-git checkout -b feature/email-templates
-```
-
-**Step 2: Generate module**
-```bash
-nest g module modules/template
-nest g controller modules/template
-nest g service modules/template
-```
-
-**Step 3: Create entities**
-```typescript
-// src/modules/template/entities/template.entity.ts
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
-import { User } from '../../user/entities/user.entity';
-
-@Entity('email_templates')
-export class Template {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column()
-  name: string;
-
-  @Column({ type: 'text' })
-  bodyHtml: string;
-
-  @ManyToOne(() => User)
-  user: User;
-
-  // ... other fields
-}
-```
-
-**Step 4: Create DTOs**
-```typescript
-// src/modules/template/dto/create-template.dto.ts
-import { IsString, IsNotEmpty, MaxLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
-
-export class CreateTemplateDto {
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  @MaxLength(255)
-  name: string;
-
-  @ApiProperty()
-  @IsString()
-  @IsNotEmpty()
-  bodyHtml: string;
-}
-```
-
-**Step 5: Implement service**
-```typescript
-// src/modules/template/template.service.ts
-@Injectable()
-export class TemplateService {
-  constructor(
-    @InjectRepository(Template)
-    private templateRepository: Repository<Template>,
-  ) {}
-
-  async create(userId: string, dto: CreateTemplateDto): Promise<Template> {
-    const template = this.templateRepository.create({
-      ...dto,
-      user: { id: userId },
-    });
-    return this.templateRepository.save(template);
-  }
-
-  // ... other methods
-}
-```
-
-**Step 6: Implement controller**
-```typescript
-// src/modules/template/template.controller.ts
-@Controller('templates')
-@UseGuards(JwtAuthGuard)
-@ApiTags('templates')
-export class TemplateController {
-  constructor(private readonly templateService: TemplateService) {}
-
-  @Post()
-  @ApiOperation({ summary: 'Create email template' })
-  async create(
-    @CurrentUser() user: User,
-    @Body() dto: CreateTemplateDto,
-  ) {
-    return this.templateService.create(user.id, dto);
-  }
-
-  // ... other endpoints
-}
-```
-
-**Step 7: Write tests**
-```typescript
-// src/modules/template/template.service.spec.ts
-describe('TemplateService', () => {
-  let service: TemplateService;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        TemplateService,
-        {
-          provide: getRepositoryToken(Template),
-          useValue: mockRepository,
-        },
-      ],
-    }).compile();
-
-    service = module.get<TemplateService>(TemplateService);
-  });
-
-  it('should create a template', async () => {
-    // Test implementation
-  });
-});
-```
-
-**Step 8: Create migration**
-```bash
-pnpm run migration:generate --name CreateTemplateTable
-pnpm run migration:run
-```
-
-**Step 9: Commit & push**
-```bash
-git add .
-git commit -m "feat: implement email templates module"
-git push origin feature/email-templates
-```
-
-**Step 10: Create Pull Request**
-
----
-
 ## Coding Standards
 
 ### 1. TypeScript
 
 **Use strict typing:**
-```typescript
-// ❌ Bad
-function sendEmail(data: any) {
-  // ...
-}
-
-// ✅ Good
-function sendEmail(data: SendEmailDto): Promise<Email> {
-  // ...
-}
-```
-
 **Use interfaces/types:**
-```typescript
-interface JwtPayload {
-  sub: string;
-  email: string;
-  roles: string[];
-}
-```
 
 ### 2. Naming Conventions
 
@@ -557,82 +328,7 @@ user.repository.ts
 jwt-auth.guard.ts
 ```
 
-### 4. Code Organization
-
-**Use dependency injection:**
-```typescript
-@Injectable()
-export class EmailService {
-  constructor(
-    private readonly smtpService: SmtpService,
-    private readonly emailRepository: EmailRepository,
-  ) {}
-}
-```
-
-**Use async/await instead of callbacks:**
-```typescript
-// ❌ Bad
-getUserById(id, (err, user) => {
-  if (err) throw err;
-  // ...
-});
-
-// ✅ Good
-const user = await this.userRepository.findById(id);
-```
-
-### 5. Error Handling
-
-```typescript
-// Service layer
-async findById(id: string): Promise<User> {
-  const user = await this.userRepository.findOne({ where: { id } });
-
-  if (!user) {
-    throw new NotFoundException(`User with id ${id} not found`);
-  }
-
-  return user;
-}
-
-// Controller layer
-@Get(':id')
-async findOne(@Param('id') id: string) {
-  try {
-    return await this.userService.findById(id);
-  } catch (error) {
-    if (error instanceof NotFoundException) {
-      throw error;
-    }
-    throw new InternalServerErrorException('Failed to fetch user');
-  }
-}
-```
-
-### 6. Validation
-
-Use `class-validator`:
-
-```typescript
-export class CreateUserDto {
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
-
-  @IsString()
-  @MinLength(8)
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
-  password: string;
-
-  @IsString()
-  @MaxLength(100)
-  @IsOptional()
-  firstName?: string;
-}
-```
-
-### 7. Documentation
+### 4. Documentation
 
 Use Swagger decorators:
 
@@ -670,101 +366,11 @@ pnpm run test:watch
 pnpm run test user.service.spec.ts
 ```
 
-**Example unit test:**
-```typescript
-describe('UserService', () => {
-  let service: UserService;
-  let repository: Repository<User>;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        UserService,
-        {
-          provide: getRepositoryToken(User),
-          useValue: {
-            findOne: jest.fn(),
-            save: jest.fn(),
-            create: jest.fn(),
-          },
-        },
-      ],
-    }).compile();
-
-    service = module.get<UserService>(UserService);
-    repository = module.get<Repository<User>>(getRepositoryToken(User));
-  });
-
-  describe('findById', () => {
-    it('should return a user if found', async () => {
-      const mockUser = { id: '1', email: 'test@example.com' };
-      jest.spyOn(repository, 'findOne').mockResolvedValue(mockUser as User);
-
-      const result = await service.findById('1');
-
-      expect(result).toEqual(mockUser);
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: '1' } });
-    });
-
-    it('should throw NotFoundException if user not found', async () => {
-      jest.spyOn(repository, 'findOne').mockResolvedValue(null);
-
-      await expect(service.findById('999')).rejects.toThrow(NotFoundException);
-    });
-  });
-});
-```
-
 ### 2. E2E Tests
 
 ```bash
 # Run e2e tests
 pnpm run test:e2e
-```
-
-**Example e2e test:**
-```typescript
-describe('AuthController (e2e)', () => {
-  let app: INestApplication;
-
-  beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    await app.init();
-  });
-
-  afterAll(async () => {
-    await app.close();
-  });
-
-  describe('/auth/login (POST)', () => {
-    it('should return access token on valid credentials', () => {
-      return request(app.getHttpServer())
-        .post('/auth/login')
-        .send({
-          email: 'test@example.com',
-          password: 'Password123!',
-        })
-        .expect(200)
-        .expect((res) => {
-          expect(res.body.accessToken).toBeDefined();
-        });
-    });
-
-    it('should return 401 on invalid credentials', () => {
-      return request(app.getHttpServer())
-        .post('/auth/login')
-        .send({
-          email: 'test@example.com',
-          password: 'wrongpassword',
-        })
-        .expect(401);
-    });
-  });
-});
 ```
 
 ### 3. Integration Tests
@@ -800,29 +406,6 @@ Create `.vscode/launch.json`:
 
 ### 2. Logging
 
-Use NestJS Logger:
-
-```typescript
-import { Logger } from '@nestjs/common';
-
-@Injectable()
-export class EmailService {
-  private readonly logger = new Logger(EmailService.name);
-
-  async sendEmail(dto: SendEmailDto) {
-    this.logger.log(`Sending email to ${dto.to}`);
-
-    try {
-      // Send email logic
-      this.logger.log(`Email sent successfully to ${dto.to}`);
-    } catch (error) {
-      this.logger.error(`Failed to send email: ${error.message}`, error.stack);
-      throw error;
-    }
-  }
-}
-```
-
 ---
 
 ## Database Management
@@ -852,92 +435,6 @@ pnpm run migration:show
 # Run seeds
 pnpm run seed
 ```
-
-**Example seed:**
-```typescript
-// scripts/seed.ts
-import { DataSource } from 'typeorm';
-import { User } from '../src/modules/user/entities/user.entity';
-import * as bcrypt from 'bcrypt';
-
-export async function seed(dataSource: DataSource) {
-  const userRepository = dataSource.getRepository(User);
-
-  const existingUser = await userRepository.findOne({
-    where: { email: 'admin@example.com' },
-  });
-
-  if (!existingUser) {
-    const passwordHash = await bcrypt.hash('Admin123!', 10);
-
-    const admin = userRepository.create({
-      email: 'admin@example.com',
-      passwordHash,
-      firstName: 'Admin',
-      lastName: 'User',
-      isVerified: true,
-    });
-
-    await userRepository.save(admin);
-    console.log('Admin user created');
-  }
-}
-```
-
----
-
-## Git Workflow
-
-### 1. Branch Strategy
-
-```
-main          # Production-ready code
-  └── develop # Development branch
-      ├── feature/email-templates
-      ├── feature/calendar-integration
-      ├── bugfix/email-send-issue
-      └── hotfix/security-patch
-```
-
-### 2. Commit Message Convention
-
-Use Conventional Commits:
-
-```
-<type>(<scope>): <subject>
-
-<body>
-
-<footer>
-```
-
-**Types:**
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation
-- `style`: Code style (formatting, etc.)
-- `refactor`: Code refactoring
-- `test`: Adding tests
-- `chore`: Maintenance tasks
-
-**Examples:**
-```bash
-feat(email): implement email templates
-fix(auth): resolve JWT token expiration issue
-docs: update API documentation
-refactor(user): simplify user service logic
-test(email): add unit tests for email service
-```
-
-### 3. Pull Request Process
-
-1. Create feature branch from `develop`
-2. Implement feature with tests
-3. Push branch and create PR
-4. Request code review
-5. Address review comments
-6. Merge to `develop` after approval
-7. Delete feature branch
 
 ---
 

@@ -1,17 +1,21 @@
-# AWS Hybrid Architecture - CMS Email System
+# AWS Microservices Architecture - CMS Email System
 
-## Tổng quan
+## Overview
 
-CMS Email System sử dụng **Hybrid Architecture** kết hợp giữa **AWS Lambda** (serverless functions) và **ECS Fargate** (container orchestration) để tận dụng ưu điểm của cả hai:
+CMS Email System uses **AWS Cloud-Native Microservices Architecture** with **NestJS** and **Domain-Driven Design (DDD)** principles. The architecture leverages AWS managed services to build a highly scalable, resilient, and cost-effective email management system.
 
-- **Lambda**: Xử lý API requests (stateless, bursty traffic, auto-scaling)
-- **Fargate**: Xử lý long-running processes (IMAP polling, SMTP sending)
+## Architecture Philosophy
 
-Architecture này tối ưu về **cost**, **performance**, và **scalability** cho email system.
+- **Microservices**: Independent, loosely-coupled services
+- **Domain-Driven Design**: Clear bounded contexts
+- **Cloud-Native**: Leverage AWS managed services
+- **Event-Driven**: Asynchronous communication via events
+- **Serverless-First**: Use serverless where appropriate
+- **Container-Based**: ECS Fargate for microservices
 
 ---
 
-## Kiến trúc tổng thể (High-Level)
+## High-Level Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -19,1140 +23,594 @@ Architecture này tối ưu về **cost**, **performance**, và **scalability** 
 │              (Web App, Mobile App, Desktop App)                      │
 └────────────────────────────┬────────────────────────────────────────┘
                              │ HTTPS
-                             │
 ┌────────────────────────────▼────────────────────────────────────────┐
 │                      AWS CloudFront (CDN)                            │
-│  • Global edge locations (400+)                                      │
-│  • Cache static assets & API responses                               │
+│  • Global edge locations                                             │
+│  • Static assets caching                                             │
 │  • DDoS protection (AWS Shield)                                      │
 │  • SSL/TLS termination                                               │
-│  • Custom domain (mail.yourdomain.com)                              │
 └────────────────────────────┬────────────────────────────────────────┘
                              │
 ┌────────────────────────────▼────────────────────────────────────────┐
-│                    AWS API Gateway (REST API)                        │
-│  • Authentication (Custom Lambda authorizer)                         │
-│  • Rate limiting (10,000 req/sec per account)                       │
-│  • Request/Response transformation                                   │
-│  • CORS configuration                                                │
-│  • Request validation                                                │
-│  • Usage plans & API keys                                           │
+│            Application Load Balancer (ALB)                           │
+│  • Path-based routing                                                │
+│  • Health checks                                                     │
+│  • SSL termination                                                   │
 └────────────────────────────┬────────────────────────────────────────┘
                              │
-            ┌────────────────┴────────────────┐
-            │                                 │
-┌───────────▼──────────┐          ┌──────────▼──────────┐
-│   AWS Lambda         │          │   ECS Fargate       │
-│   (API Handlers)     │          │   (Background Jobs) │
-│                      │          │                     │
-│ • Auth APIs          │          │ • IMAP Poller       │
-│ • Email CRUD         │          │ • SMTP Sender       │
-│ • User Management    │          │ • WebSocket Server  │
-│ • Folder/Label       │          │   (future)          │
-│ • Contact/Calendar   │          │                     │
-│ • Search             │          │ Always-on services  │
-│ • Template/Filter    │          │ Auto-scaling        │
-│                      │          │                     │
-│ On-demand execution  │          │                     │
-│ Auto-scaling 0-1000+ │          │                     │
-└───────────┬──────────┘          └──────────┬──────────┘
-            │                                 │
-            └────────────┬────────────────────┘
-                         │
-        ┌────────────────┼────────────────┐
-        │                │                │
-┌───────▼────────┐  ┌───▼────────┐  ┌───▼────────────┐
-│  RDS Proxy     │  │ElastiCache │  │  Amazon SQS    │
-│(Conn Pooling)  │  │Redis       │  │  (Queues)      │
-│                │  │            │  │                │
-│Max 1000 conn   │  │Session     │  │• Email send    │
-│Auto-scaling    │  │Cache       │  │• Email process │
-│$22/month       │  │Hot data    │  │• Attachments   │
-└───────┬────────┘  └────────────┘  └────────────────┘
-        │
-┌───────▼──────────────────────────────────────────────┐
-│         Aurora Serverless v2 (PostgreSQL)            │
-│  • Auto-scaling: 0.5 - 16 ACU                        │
-│  • Multi-AZ deployment                               │
-│  • Automated backups (point-in-time recovery)        │
-│  • Read replicas (optional)                          │
-└──────────────────────────────────────────────────────┘
+┌────────────────────────────▼────────────────────────────────────────┐
+│                     API Gateway Service                              │
+│                  (ECS Fargate - 2-10 tasks)                          │
+│  • Request routing to microservices                                  │
+│  • Authentication & Authorization                                    │
+│  • Rate limiting                                                     │
+│  • Response aggregation                                              │
+└────────────────────────────┬────────────────────────────────────────┘
+                             │
+            ┌────────────────┼────────────────────────┐
+            │                │                        │
+┌───────────▼─────┐  ┌───────▼────────┐  ┌──────────▼────────┐
+│  Auth Service   │  │ Email Service  │  │ Contact Service   │
+│  (ECS Fargate)  │  │ (ECS Fargate)  │  │  (ECS Fargate)    │
+│  2-5 tasks      │  │ 5-20 tasks     │  │  2-5 tasks        │
+└───────────┬─────┘  └───────┬────────┘  └──────────┬────────┘
+            │                │                        │
+┌───────────▼─────┐  ┌───────▼────────┐  ┌──────────▼────────┐
+│ Folder Service  │  │ Calendar Svc   │  │  Label Service    │
+│  (ECS Fargate)  │  │ (ECS Fargate)  │  │  (ECS Fargate)    │
+│  2-5 tasks      │  │ 2-5 tasks      │  │  2-5 tasks        │
+└───────────┬─────┘  └───────┬────────┘  └──────────┬────────┘
+            │                │                        │
+┌───────────▼─────┐  ┌───────▼────────┐  ┌──────────▼────────┐
+│Template Service │  │ Filter Service │  │Attachment Service │
+│  (ECS Fargate)  │  │ (ECS Fargate)  │  │  (ECS Fargate)    │
+│  2-5 tasks      │  │ 2-5 tasks      │  │  2-5 tasks        │
+└───────────┬─────┘  └───────┬────────┘  └──────────┬────────┘
+            │                │                        │
+            └────────────────┼────────────────────────┘
+                             │
+┌────────────────────────────▼────────────────────────────────────────┐
+│                    Amazon EventBridge                                │
+│             (Event Bus for Inter-Service Communication)              │
+│  • Event routing between services                                    │
+│  • Schema registry                                                   │
+│  • Event replay & archive                                            │
+└────────────────────────────┬────────────────────────────────────────┘
+                             │
+        ┌────────────────────┼─────────────────────┐
+        │                    │                     │
+┌───────▼────────┐  ┌────────▼────────┐  ┌────────▼────────┐
+│  RDS Aurora    │  │  DocumentDB     │  │ElastiCache Redis│
+│  PostgreSQL    │  │  (MongoDB API)  │  │ (Cache/Session) │
+│  Serverless v2 │  │  Serverless     │  │                 │
+└────────────────┘  └─────────────────┘  └─────────────────┘
 
-┌──────────────────────────────────────────────────────┐
-│            EXTERNAL SERVICES & STORAGE               │
-├──────────────────────────────────────────────────────┤
-│                                                      │
-│  Amazon S3 (Object Storage)                         │
-│  • Email attachments                                │
-│  • User avatars                                     │
-│  • Email backups                                    │
-│  • Static assets                                    │
-│  Lifecycle rules: Archive after 90 days             │
-│                                                      │
-│  Amazon SES (Simple Email Service)                  │
-│  • Send emails (SMTP alternative)                   │
-│  • Bounce/complaint handling                        │
-│  • Email analytics                                  │
-│                                                      │
-│  Amazon EventBridge                                 │
-│  • Scheduled tasks (cron jobs)                      │
-│  • Event routing                                    │
-│  • Calendar reminders                               │
-│                                                      │
-│  Amazon SNS (Notifications)                         │
-│  • Email notifications                              │
-│  • Push notifications                               │
-│  • SMS (future)                                     │
-│                                                      │
-└──────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                    SUPPORTING AWS SERVICES                            │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  Amazon SQS (Message Queues)                                        │
+│  • email-send-queue                                                 │
+│  • email-receive-queue                                              │
+│  • attachment-scan-queue                                            │
+│  • reminder-queue                                                   │
+│                                                                      │
+│  Amazon S3 (Object Storage)                                         │
+│  • Email attachments                                                │
+│  • User avatars                                                     │
+│  • Email backups                                                    │
+│                                                                      │
+│  Amazon SES (Email Sending)                                         │
+│  • SMTP alternative                                                 │
+│  • Bounce handling                                                  │
+│                                                                      │
+│  AWS Secrets Manager                                                │
+│  • Database credentials                                             │
+│  • API keys                                                         │
+│  • JWT secrets                                                      │
+│                                                                      │
+│  Amazon CloudWatch                                                  │
+│  • Logs aggregation                                                 │
+│  • Metrics & alarms                                                 │
+│  • Dashboards                                                       │
+│                                                                      │
+│  AWS X-Ray                                                          │
+│  • Distributed tracing                                              │
+│  • Service map                                                      │
+│  • Performance insights                                             │
+│                                                                      │
+│  Amazon OpenSearch (ElasticSearch)                                  │
+│  • Full-text search                                                 │
+│  • Log analytics                                                    │
+│                                                                      │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## AWS Services Mapping
 
-### Traditional Architecture → AWS Services
+### Microservices → AWS Services
 
-| Traditional Component | AWS Service | Purpose |
-|----------------------|-------------|---------|
-| NestJS API Server (EC2) | **Lambda Functions** | Handle API requests |
-| Background Workers | **ECS Fargate** | IMAP polling, SMTP sending |
-| PostgreSQL (RDS) | **Aurora Serverless v2** | Primary database |
-| Redis (ElastiCache) | **ElastiCache Redis** | Session & cache |
-| Bull Queue | **SQS + Lambda** | Message queue |
-| NGINX Load Balancer | **API Gateway + CloudFront** | Load balancing & CDN |
-| File Storage | **S3** | Object storage |
-| SMTP Server | **Amazon SES** | Email sending |
-| Cron Jobs | **EventBridge** | Scheduled tasks |
-| Monitoring | **CloudWatch + X-Ray** | Logs & tracing |
-
----
-
-## Lambda Functions Breakdown
-
-### 1. Auth Lambda (`auth-handler`)
-
-**Purpose:** Authentication & authorization
-
-**Runtime:** Node.js 20.x
-**Memory:** 512 MB
-**Timeout:** 30 seconds
-**Concurrency:** 100 (reserved)
-
-**Endpoints:**
-```typescript
-POST /auth/register       // Register new user
-POST /auth/login          // Login with email/password
-POST /auth/refresh        // Refresh access token
-POST /auth/logout         // Logout & revoke tokens
-POST /auth/verify-email   // Verify email with token
-POST /auth/forgot-password // Request password reset
-POST /auth/reset-password  // Reset password with token
-```
-
-**Environment Variables:**
-- `JWT_SECRET`
-- `JWT_REFRESH_SECRET`
-- `DATABASE_URL`
-- `REDIS_URL`
-
-**Cold Start:** ~500ms
-**Warm Execution:** ~20ms
+| Component | AWS Service | Configuration | Purpose |
+|-----------|-------------|---------------|---------|
+| **API Gateway** | ECS Fargate | 2-10 tasks, 0.5 vCPU, 1GB RAM | Request routing, auth |
+| **Auth Service** | ECS Fargate | 2-5 tasks, 0.5 vCPU, 1GB RAM | User authentication |
+| **Email Service** | ECS Fargate | 5-20 tasks, 1 vCPU, 2GB RAM | Email CRUD, SMTP/IMAP |
+| **Folder Service** | ECS Fargate | 2-5 tasks, 0.25 vCPU, 512MB RAM | Folder management |
+| **Contact Service** | ECS Fargate | 2-5 tasks, 0.5 vCPU, 1GB RAM | Contact management |
+| **Calendar Service** | ECS Fargate | 2-5 tasks, 0.5 vCPU, 1GB RAM | Events & reminders |
+| **Label Service** | ECS Fargate | 2-5 tasks, 0.25 vCPU, 512MB RAM | Email tagging |
+| **Template Service** | ECS Fargate | 2-5 tasks, 0.25 vCPU, 512MB RAM | Email templates |
+| **Filter Service** | ECS Fargate | 2-5 tasks, 0.5 vCPU, 1GB RAM | Rules & spam detection |
+| **Attachment Service** | ECS Fargate | 2-5 tasks, 0.5 vCPU, 1GB RAM | File uploads, virus scan |
+| **Search Service** | ECS Fargate | 2-5 tasks, 0.5 vCPU, 1GB RAM | Full-text search |
+| **Event Bus** | EventBridge | N/A | Inter-service events |
+| **Message Queue** | SQS | Standard queues | Async processing |
+| **Auth Database** | Aurora Serverless v2 | 0.5-4 ACU | User data |
+| **Email Database** | DocumentDB Serverless | On-demand | Email content |
+| **Other Databases** | Aurora Serverless v2 | 0.5-2 ACU each | Service-specific data |
+| **Cache** | ElastiCache Redis | cache.t3.micro cluster | Session & caching |
+| **Storage** | S3 | Standard + IA | Attachments |
+| **Search Engine** | OpenSearch Serverless | On-demand | Full-text search |
+| **Email Sending** | SES | Pay-per-email | SMTP alternative |
 
 ---
 
-### 2. Email Lambda (`email-handler`)
+## Microservices Architecture Details
 
-**Purpose:** Email CRUD operations & sending
+### 1. API Gateway Service
 
-**Runtime:** Node.js 20.x
-**Memory:** 1024 MB (cần nhiều cho email parsing)
-**Timeout:** 60 seconds
-**Concurrency:** 500
+**Responsibility**: Single entry point for all client requests
 
-**Endpoints:**
-```typescript
-GET    /emails              // List emails (paginated)
-GET    /emails/:id          // Get email detail
-POST   /emails/send         // Send email
-POST   /emails/:id/reply    // Reply to email
-POST   /emails/:id/forward  // Forward email
-POST   /emails/drafts       // Save draft
-PUT    /emails/drafts/:id   // Update draft
-DELETE /emails/:id          // Delete (move to trash)
-PATCH  /emails/:id/read     // Mark as read
-PATCH  /emails/:id/star     // Star email
-PATCH  /emails/:id/move     // Move to folder
-POST   /emails/bulk         // Bulk actions
-GET    /emails/search       // Search emails
-```
-
-**Environment Variables:**
-- `DATABASE_URL`
-- `REDIS_URL`
-- `S3_BUCKET_NAME`
-- `SES_REGION`
-- `SQS_SEND_QUEUE_URL`
-
-**Cold Start:** ~600ms
-**Warm Execution:** ~30ms
-
----
-
-### 3. User Lambda (`user-handler`)
-
-**Purpose:** User profile & settings management
-
-**Runtime:** Node.js 20.x
-**Memory:** 256 MB
-**Timeout:** 30 seconds
-**Concurrency:** 100
-
-**Endpoints:**
-```typescript
-GET    /users/me           // Get current user
-PATCH  /users/me           // Update profile
-PUT    /users/me/signature // Update email signature
-PUT    /users/me/settings  // Update settings
-POST   /users/me/change-password // Change password
-POST   /users/me/avatar    // Upload avatar
-```
-
----
-
-### 4. Folder Lambda (`folder-handler`)
-
-**Purpose:** Folder management
-
-**Runtime:** Node.js 20.x
-**Memory:** 256 MB
-**Timeout:** 30 seconds
-
-**Endpoints:**
-```typescript
-GET    /folders           // List all folders
-POST   /folders           // Create folder
-PATCH  /folders/:id       // Update folder
-DELETE /folders/:id       // Delete folder
-```
-
----
-
-### 5. Contact Lambda (`contact-handler`)
-
-**Purpose:** Contact management
-
-**Runtime:** Node.js 20.x
-**Memory:** 512 MB
-**Timeout:** 30 seconds
-
-**Endpoints:**
-```typescript
-GET    /contacts          // List contacts
-GET    /contacts/:id      // Get contact detail
-POST   /contacts          // Create contact
-PATCH  /contacts/:id      // Update contact
-DELETE /contacts/:id      // Delete contact
-POST   /contacts/import   // Import from CSV/vCard
-GET    /contacts/export   // Export to CSV/vCard
-```
-
----
-
-### 6. Calendar Lambda (`calendar-handler`)
-
-**Purpose:** Calendar & events management
-
-**Runtime:** Node.js 20.x
-**Memory:** 512 MB
-**Timeout:** 30 seconds
-
-**Endpoints:**
-```typescript
-GET    /calendar/events              // List events
-POST   /calendar/events              // Create event
-PATCH  /calendar/events/:id          // Update event
-DELETE /calendar/events/:id          // Delete event
-POST   /calendar/events/:id/respond  // Accept/Decline invitation
-```
-
----
-
-### 7. Label Lambda (`label-handler`)
-
-**Purpose:** Labels & tags management
-
-**Runtime:** Node.js 20.x
-**Memory:** 256 MB
-**Timeout:** 30 seconds
-
-**Endpoints:**
-```typescript
-GET    /labels                    // List labels
-POST   /labels                    // Create label
-PATCH  /labels/:id                // Update label
-DELETE /labels/:id                // Delete label
-POST   /emails/:id/labels         // Assign labels to email
-DELETE /emails/:id/labels/:labelId // Remove label from email
-```
-
----
-
-### 8. Template Lambda (`template-handler`)
-
-**Purpose:** Email templates management
-
-**Runtime:** Node.js 20.x
-**Memory:** 256 MB
-**Timeout:** 30 seconds
-
-**Endpoints:**
-```typescript
-GET    /templates           // List templates
-POST   /templates           // Create template
-PATCH  /templates/:id       // Update template
-DELETE /templates/:id       // Delete template
-POST   /templates/:id/use   // Use template (render with variables)
-```
-
----
-
-### 9. Filter Lambda (`filter-handler`)
-
-**Purpose:** Email filters & rules management
-
-**Runtime:** Node.js 20.x
-**Memory:** 256 MB
-**Timeout:** 30 seconds
-
-**Endpoints:**
-```typescript
-GET    /filters        // List filters
-POST   /filters        // Create filter
-PATCH  /filters/:id    // Update filter
-DELETE /filters/:id    // Delete filter
-```
-
----
-
-### 10. Attachment Lambda (`attachment-handler`)
-
-**Purpose:** File upload & download
-
-**Runtime:** Node.js 20.x
-**Memory:** 1024 MB (cần nhiều cho file processing)
-**Timeout:** 60 seconds
-
-**Endpoints:**
-```typescript
-POST   /attachments/upload        // Upload file to S3
-GET    /attachments/:id/download  // Download file from S3
-DELETE /attachments/:id            // Delete file
-```
-
----
-
-### 11. Search Lambda (`search-handler`)
-
-**Purpose:** Advanced email search
-
-**Runtime:** Node.js 20.x
-**Memory:** 512 MB
-**Timeout:** 30 seconds
-
-**Endpoints:**
-```typescript
-GET /search?q=...&filters=... // Advanced search with filters
-```
-
----
-
-## ECS Fargate Services
-
-### 1. IMAP Poller Service
-
-**Purpose:** Fetch emails từ IMAP server (Gmail, Outlook, v.v.)
-
-**Configuration:**
+**AWS Configuration**:
 ```yaml
+Service: api-gateway-service
+ECS Cluster: cms-email-cluster
+Launch Type: Fargate
 Task Definition:
-  CPU: 0.25 vCPU (256)
-  Memory: 512 MB
-  Container Image: cms-email-imap-poller:latest
+  CPU: 512 (.5 vCPU)
+  Memory: 1024 MB
+  Container:
+    Image: cms-email/api-gateway:latest
+    Port: 3000
+    Environment:
+      - NODE_ENV=production
+      - AUTH_SERVICE_URL=http://auth-service.local:3001
+      - EMAIL_SERVICE_URL=http://email-service.local:3002
+      - ...
 
 Service:
-  Desired Count: 2 (high availability)
-  Min Healthy Percent: 50
+  Desired Count: 2
+  Min Healthy Percent: 100
   Max Percent: 200
 
 Auto Scaling:
   Target: CPU 70%
-  Min: 2 tasks
-  Max: 10 tasks
+  Min: 2
+  Max: 10
+  Scale-out: +2 tasks when CPU > 70% for 2 minutes
+  Scale-in: -1 task when CPU < 40% for 5 minutes
 
-Networking:
-  VPC: Private subnet
-  Security Group: Outbound IMAP (993), SMTP (587)
+Load Balancer:
+  Type: Application Load Balancer
+  Listener: HTTPS:443
+  Health Check: /health
+
+Service Discovery:
+  Namespace: cms-email.local
+  Service Name: api-gateway
 ```
 
-**Environment Variables:**
-```
-DATABASE_URL=postgresql://...
-REDIS_URL=redis://...
-SQS_PROCESS_QUEUE_URL=https://sqs.us-east-1.amazonaws.com/...
-IMAP_POLL_INTERVAL=30000  # 30 seconds
-AWS_REGION=us-east-1
-```
+**Communication**:
+- **Inbound**: ALB (HTTPS)
+- **Outbound**: gRPC to microservices via AWS Cloud Map
 
-**Implementation Logic:**
-```typescript
-// imap-poller.service.ts
-export class ImapPollerService {
-  async start() {
-    // Lấy tất cả email accounts từ database
-    const accounts = await this.getActiveEmailAccounts();
-
-    for (const account of accounts) {
-      // Tạo IMAP connection cho mỗi account
-      const imap = await this.connectIMAP(account);
-
-      // Sử dụng IDLE command để real-time updates
-      imap.on('mail', async (numNewMsgs) => {
-        console.log(`New emails: ${numNewMsgs}`);
-
-        // Fetch new emails (UNSEEN)
-        const emails = await imap.fetch('1:*', {
-          bodies: '',
-          struct: true
-        });
-
-        // Send to SQS for processing
-        for (const email of emails) {
-          await this.sqs.sendMessage({
-            QueueUrl: process.env.SQS_PROCESS_QUEUE_URL,
-            MessageBody: JSON.stringify({
-              accountId: account.id,
-              email: email
-            })
-          });
-        }
-      });
-
-      // Keep connection alive
-      setInterval(() => {
-        imap.noop(); // NOOP command
-      }, 60000); // Every 60 seconds
-    }
-  }
-}
-```
-
-**Why Fargate, not Lambda?**
-- IMAP cần persistent connection (24/7)
-- Lambda max timeout: 15 minutes
-- Lambda inefficient cho long-running tasks
-- Fargate cost: ~$7/month per task (0.25 vCPU)
-- Lambda cost: ~$20/month (polling every 5 min)
-
-**Cost:** $14/month (2 tasks * $7)
+**Cost**: ~$15/month (2 tasks × 0.5 vCPU × $0.04048/vCPU-hour × 730 hours)
 
 ---
 
-### 2. SMTP Sender Service
+### 2. Auth Service
 
-**Purpose:** Send emails via SMTP with connection pooling
+**Responsibility**: Authentication, authorization, user management
 
-**Configuration:**
+**AWS Configuration**:
 ```yaml
+Service: auth-service
 Task Definition:
-  CPU: 0.25 vCPU (256)
-  Memory: 512 MB
-  Container Image: cms-email-smtp-sender:latest
+  CPU: 512 (.5 vCPU)
+  Memory: 1024 MB
+  Container:
+    Image: cms-email/auth-service:latest
+    Port: 3001
+    Secrets:
+      - JWT_SECRET (from Secrets Manager)
+      - DATABASE_URL (from Secrets Manager)
+
+Database: Aurora PostgreSQL Serverless v2
+  Min ACU: 0.5
+  Max ACU: 4
+  Database: auth_db
+
+Cache: ElastiCache Redis
+  Node Type: cache.t3.micro
+  Purpose: Session storage, refresh tokens
 
 Service:
   Desired Count: 2
+  Auto Scaling: CPU 70%, Min: 2, Max: 5
 
-Auto Scaling:
-  Target: SQS Queue Length > 100
-  Min: 2 tasks
-  Max: 20 tasks
-  Scale-out: Add 2 tasks when queue > 100
-  Scale-in: Remove 1 task when queue < 50
-
-Networking:
-  VPC: Private subnet
-  Security Group: Outbound SMTP (587)
+Events Published:
+  - UserRegistered → EventBridge
+  - UserLoggedIn → EventBridge
+  - PasswordChanged → EventBridge
 ```
 
-**Environment Variables:**
+**Cost**: ~$50/month
+- ECS: ~$15/month
+- Aurora: ~$30/month (0.5 ACU avg)
+- Redis: Shared (~$5/month)
+
+---
+
+### 3. Email Service
+
+**Responsibility**: Core email operations, SMTP/IMAP
+
+**AWS Configuration**:
+```yaml
+Service: email-service
+Task Definition:
+  CPU: 1024 (1 vCPU)
+  Memory: 2048 MB
+  Container:
+    Image: cms-email/email-service:latest
+    Port: 3002
+    Environment:
+      - SMTP_HOST
+      - IMAP_HOST
+      - SQS_SEND_QUEUE_URL
+      - SQS_RECEIVE_QUEUE_URL
+
+Database: DocumentDB Serverless (MongoDB API)
+  Min ACU: 0.5
+  Max ACU: 8
+  Database: email_db
+  Collections:
+    - emails
+    - email_threads
+    - drafts
+
+Service:
+  Desired Count: 5
+  Auto Scaling: SQS Queue Depth
+    Target: 100 messages per task
+    Min: 5, Max: 20
+
+SQS Queues:
+  - email-send-queue (Standard)
+  - email-receive-queue (Standard)
+
+S3 Buckets:
+  - cms-email-attachments (encrypted)
+
+Events:
+  Published:
+    - EmailSent → EventBridge
+    - EmailReceived → EventBridge
+  Subscribed:
+    - FolderCreated (from Folder Service)
 ```
-DATABASE_URL=postgresql://...
-SQS_SEND_QUEUE_URL=https://sqs.us-east-1.amazonaws.com/...
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_POOL_SIZE=10
-AWS_REGION=us-east-1
+
+**Background Workers**:
+```yaml
+# SMTP Sender Worker
+Service: email-smtp-sender
+Task Definition:
+  CPU: 512
+  Memory: 1024 MB
+
+Purpose: Poll email-send-queue, send via SMTP/SES
+
+# IMAP Receiver Worker
+Service: email-imap-receiver
+Task Definition:
+  CPU: 512
+  Memory: 1024 MB
+
+Purpose: Poll IMAP servers, push to email-receive-queue
 ```
 
-**Implementation Logic:**
-```typescript
-// smtp-sender.service.ts
-export class SmtpSenderService {
-  private transporterPool: nodemailer.Transporter[] = [];
+**Cost**: ~$150/month
+- ECS Email Service: ~$60/month (5 tasks × 1 vCPU)
+- ECS Workers: ~$30/month (2 workers)
+- DocumentDB: ~$50/month
+- SQS: ~$2/month
+- S3: ~$5/month
 
-  async initialize() {
-    // Create SMTP connection pool
-    for (let i = 0; i < 10; i++) {
-      const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT),
-        secure: false,
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASSWORD
-        },
-        pool: true, // Use pooled connections
-        maxConnections: 5,
-        maxMessages: 100
-      });
+---
 
-      this.transporterPool.push(transporter);
+### 4. Folder Service
+
+**Responsibility**: Folder management, email organization
+
+**AWS Configuration**:
+```yaml
+Service: folder-service
+Task Definition:
+  CPU: 256 (.25 vCPU)
+  Memory: 512 MB
+
+Database: Aurora PostgreSQL Serverless v2
+  Min ACU: 0.5
+  Max ACU: 2
+  Database: folder_db
+
+Service:
+  Desired Count: 2
+  Auto Scaling: CPU 70%, Min: 2, Max: 5
+
+Events:
+  Published:
+    - FolderCreated → EventBridge
+    - EmailMovedToFolder → EventBridge
+  Subscribed:
+    - EmailSent → Update folder counts
+    - EmailDeleted → Update folder counts
+```
+
+**Cost**: ~$25/month
+- ECS: ~$7/month
+- Aurora: ~$18/month
+
+---
+
+### 5. Contact Service
+
+**AWS Configuration**:
+```yaml
+Service: contact-service
+Task Definition:
+  CPU: 512 (.5 vCPU)
+  Memory: 1024 MB
+
+Database: Aurora PostgreSQL Serverless v2
+  Database: contact_db
+  Tables:
+    - contacts
+    - contact_groups
+    - contact_group_members
+
+Service:
+  Desired Count: 2
+  Auto Scaling: CPU 70%, Min: 2, Max: 5
+```
+
+**Cost**: ~$30/month
+
+---
+
+### 6. Calendar Service
+
+**AWS Configuration**:
+```yaml
+Service: calendar-service
+Task Definition:
+  CPU: 512 (.5 vCPU)
+  Memory: 1024 MB
+
+Database: Aurora PostgreSQL Serverless v2
+  Database: calendar_db
+  Tables:
+    - events
+    - participants
+    - reminders
+
+SQS Queue:
+  - reminder-queue
+
+EventBridge Rules:
+  - check-reminders (every 1 minute)
+    Target: Lambda → Check upcoming events → Send to SQS
+
+Lambda Function: reminder-checker
+  Runtime: Node.js 20.x
+  Memory: 256 MB
+  Timeout: 60s
+  Trigger: EventBridge (cron: every 1 minute)
+```
+
+**Cost**: ~$30/month
+
+---
+
+### 7. Label Service
+
+**AWS Configuration**:
+```yaml
+Service: label-service
+Task Definition:
+  CPU: 256 (.25 vCPU)
+  Memory: 512 MB
+
+Database: Aurora PostgreSQL Serverless v2
+  Database: label_db
+
+Service:
+  Desired Count: 2
+```
+
+**Cost**: ~$20/month
+
+---
+
+### 8. Template Service
+
+**AWS Configuration**:
+```yaml
+Service: template-service
+Task Definition:
+  CPU: 256 (.25 vCPU)
+  Memory: 512 MB
+
+Database: Aurora PostgreSQL Serverless v2
+  Database: template_db
+```
+
+**Cost**: ~$20/month
+
+---
+
+### 9. Filter Service
+
+**AWS Configuration**:
+```yaml
+Service: filter-service
+Task Definition:
+  CPU: 512 (.5 vCPU)
+  Memory: 1024 MB
+
+Database: Aurora PostgreSQL Serverless v2
+  Database: filter_db
+
+Events Subscribed:
+  - EmailReceived → Apply filters
+```
+
+**Cost**: ~$30/month
+
+---
+
+### 10. Attachment Service
+
+**AWS Configuration**:
+```yaml
+Service: attachment-service
+Task Definition:
+  CPU: 512 (.5 vCPU)
+  Memory: 1024 MB
+
+Database: Aurora PostgreSQL Serverless v2
+  Database: attachment_db
+  Tables:
+    - attachments (metadata only)
+
+S3 Bucket: cms-email-attachments
+  Lifecycle:
+    - Transition to IA after 30 days
+    - Delete after 365 days
+
+SQS Queue: attachment-scan-queue
+
+Lambda Function: virus-scanner
+  Runtime: Custom (ClamAV)
+  Memory: 3008 MB
+  Timeout: 300s
+  Trigger: S3 upload event → Scan → Update database
+```
+
+**Cost**: ~$35/month
+
+---
+
+### 11. Search Service
+
+**AWS Configuration**:
+```yaml
+Service: search-service
+Task Definition:
+  CPU: 512 (.5 vCPU)
+  Memory: 1024 MB
+
+Search Engine: Amazon OpenSearch Serverless
+  Collection: email-search
+  Indexing: On-demand
+
+Events Subscribed:
+  - EmailCreated → Index
+  - EmailUpdated → Re-index
+  - EmailDeleted → Remove from index
+```
+
+**Cost**: ~$100/month (OpenSearch Serverless)
+
+---
+
+## Event-Driven Architecture
+
+### Amazon EventBridge Configuration
+
+**Event Bus**: `cms-email-event-bus` (custom event bus)
+
+**Event Rules**:
+
+```yaml
+# Email Events
+Rule: email-sent-rule
+  Event Pattern:
+    source: [email-service]
+    detail-type: [EmailSent]
+  Targets:
+    - folder-service (update sent folder count)
+    - search-service (index email)
+    - EventBridge Archive (7 days)
+
+Rule: email-received-rule
+  Event Pattern:
+    source: [email-service]
+    detail-type: [EmailReceived]
+  Targets:
+    - filter-service (apply filters)
+    - search-service (index email)
+    - folder-service (update inbox count)
+
+Rule: email-deleted-rule
+  Event Pattern:
+    source: [email-service]
+    detail-type: [EmailDeleted]
+  Targets:
+    - search-service (remove from index)
+    - folder-service (update folder count)
+
+# Calendar Events
+Rule: reminder-check-rule
+  Schedule: rate(1 minute)
+  Target: Lambda (reminder-checker)
+
+# User Events
+Rule: user-registered-rule
+  Event Pattern:
+    source: [auth-service]
+    detail-type: [UserRegistered]
+  Targets:
+    - folder-service (create default folders)
+    - SQS (welcome-email-queue)
+```
+
+**Event Schema Registry**:
+```json
+{
+  "EmailSent": {
+    "type": "object",
+    "properties": {
+      "emailId": { "type": "string" },
+      "userId": { "type": "string" },
+      "to": { "type": "array" },
+      "subject": { "type": "string" },
+      "sentAt": { "type": "string", "format": "date-time" }
     }
-
-    // Start consuming from SQS
-    this.consumeQueue();
-  }
-
-  async consumeQueue() {
-    while (true) {
-      // Receive messages from SQS (batch of 10)
-      const messages = await this.sqs.receiveMessage({
-        QueueUrl: process.env.SQS_SEND_QUEUE_URL,
-        MaxNumberOfMessages: 10,
-        WaitTimeSeconds: 20 // Long polling
-      });
-
-      if (!messages.Messages) {
-        continue;
-      }
-
-      // Process messages in parallel
-      await Promise.all(
-        messages.Messages.map(msg => this.sendEmail(msg))
-      );
-    }
-  }
-
-  async sendEmail(message: any) {
-    const emailData = JSON.parse(message.Body);
-
-    try {
-      // Get transporter from pool (round-robin)
-      const transporter = this.getTransporter();
-
-      // Send email
-      await transporter.sendMail({
-        from: emailData.from,
-        to: emailData.to,
-        subject: emailData.subject,
-        html: emailData.bodyHtml,
-        text: emailData.bodyText,
-        attachments: emailData.attachments
-      });
-
-      // Update database (status = sent)
-      await this.updateEmailStatus(emailData.id, 'sent');
-
-      // Delete message from queue
-      await this.sqs.deleteMessage({
-        QueueUrl: process.env.SQS_SEND_QUEUE_URL,
-        ReceiptHandle: message.ReceiptHandle
-      });
-
-      console.log(`Email sent: ${emailData.id}`);
-
-    } catch (error) {
-      console.error(`Failed to send email: ${error.message}`);
-
-      // If retry count > 3, move to DLQ
-      // Otherwise, message will return to queue after visibility timeout
-    }
-  }
-
-  getTransporter(): nodemailer.Transporter {
-    // Round-robin load balancing
-    return this.transporterPool[
-      Math.floor(Math.random() * this.transporterPool.length)
-    ];
   }
 }
 ```
 
-**Why Fargate, not Lambda?**
-- Connection pooling: Tạo 10 SMTP connections, reuse cho nhiều emails
-- Batch processing: Xử lý 10 emails cùng lúc
-- Lambda: Mỗi invocation phải tạo mới connection = overhead
-- Cost-effective cho high-volume sending
-
-**Cost:** $14/month (2 tasks * $7)
-
----
-
-## Database Architecture
-
-### Aurora Serverless v2 Configuration
-
-```yaml
-Engine: PostgreSQL 15
-Capacity:
-  Min: 0.5 ACU
-  Max: 16 ACU
-  Auto-pause: Enabled (after 5 minutes idle)
-
-Multi-AZ: Enabled
-Backup:
-  Retention: 7 days
-  Point-in-time recovery: Enabled
-
-Performance Insights: Enabled
-Enhanced Monitoring: Enabled
-
-Instance Class: Serverless (no instance, just ACU)
-Storage: Auto-scaling (10GB - 128TB)
-```
-
-**Cost Estimation:**
-- Low traffic (avg 1 ACU): ~$50/month
-- Medium traffic (avg 2 ACU): ~$100/month
-- High traffic (avg 4 ACU): ~$200/month
-
-**ACU (Aurora Capacity Unit):**
-- 1 ACU = 2 GB RAM + equivalent CPU
-- Scales in increments of 0.5 ACU
-- Pricing: ~$0.12/ACU-hour
-
----
-
-### RDS Proxy Configuration
-
-**Purpose:** Connection pooling cho Lambda và Fargate
-
-```yaml
-Target: Aurora Serverless cluster
-Max Connections: 1000
-Idle Client Timeout: 1800 seconds (30 minutes)
-Connection Borrow Timeout: 120 seconds
-
-IAM Authentication: Enabled
-TLS: Required
-
-Connection Pooling:
-  Max Idle Connections: 50% of max
-  Connection Timeout: 30 seconds
-```
-
-**Why RDS Proxy?**
-
-**Problem without RDS Proxy:**
-```
-Lambda có 1000 concurrent executions
-Mỗi Lambda tạo 1 database connection
-Total: 1000 connections
-
-Aurora Serverless max connections:
-- 0.5 ACU: ~90 connections
-- 1 ACU: ~180 connections
-- 2 ACU: ~360 connections
-
-❌ Connections exceeded! Lambda invocations fail!
-```
-
-**Solution with RDS Proxy:**
-```
-Lambda → RDS Proxy (connection pool) → Aurora
-1000 Lambda executions → 100 pooled connections → Aurora
-
-✅ No connection exhaustion
-✅ Connection reuse
-✅ Better performance (no connection overhead)
-```
-
-**Cost:** $0.015/vCPU-hour * 2 vCPU * 730 hours = ~$22/month
-
----
-
-## Caching Strategy
-
-### ElastiCache Redis
-
-**Configuration:**
-```yaml
-Node Type: cache.t3.micro
-Number of Nodes: 2 (primary + replica)
-Multi-AZ: Enabled
-Automatic Failover: Enabled
-
-Memory: 0.5 GB per node
-Network: VPC, private subnet
-```
-
-**Use Cases:**
-
-**1. Session Storage**
-```typescript
-// Store JWT refresh tokens
-Key: session:{userId}:{tokenId}
-Value: {refreshToken, expiresAt}
-TTL: 7 days
-```
-
-**2. User Cache**
-```typescript
-// Cache user info
-Key: user:{userId}
-Value: {email, firstName, lastName, avatar, settings}
-TTL: 1 hour
-```
-
-**3. Folder List Cache**
-```typescript
-// Cache user folders
-Key: folders:{userId}
-Value: [{id, name, unreadCount, totalCount}]
-TTL: 30 minutes
-```
-
-**4. Email List Cache**
-```typescript
-// Cache email list per folder
-Key: emails:{userId}:{folderId}:page:{page}
-Value: [{id, subject, from, snippet, ...}]
-TTL: 5 minutes
-```
-
-**5. Search Results Cache**
-```typescript
-// Cache search results
-Key: search:{userId}:{queryHash}
-Value: [email results]
-TTL: 5 minutes
-```
-
-**Cost:** ~$15/month (cache.t3.micro * 2)
-
----
-
-### CloudFront Caching
-
-**Use Cases:**
-- Static assets (JS, CSS, images, fonts)
-- User avatars
-- Email attachments (với signed URLs)
-- API responses (cache-control headers)
-
-**Configuration:**
-```yaml
-Origins:
-  - S3 bucket (static assets)
-  - API Gateway (API endpoints)
-
-Cache Behaviors:
-  - /static/*: Cache 1 year
-  - /avatars/*: Cache 1 day
-  - /api/*: Cache 5 minutes (with cache-control)
-
-Geo Restriction: None (global)
-SSL Certificate: ACM (free)
-HTTP/2: Enabled
-```
-
-**Cost:** ~$20/month (50 GB data transfer + 10M requests)
-
----
-
-## Message Queue Architecture
-
-### SQS Queues
-
-#### 1. Email Send Queue
-
-**Purpose:** Queue emails to be sent
-
-```yaml
-Queue Name: email-send-queue
-Type: Standard (high throughput)
-Visibility Timeout: 300 seconds (5 minutes)
-Message Retention: 4 days
-Max Message Size: 256 KB
-
-Dead Letter Queue: email-send-dlq
-Max Receive Count: 3 (after 3 fails → DLQ)
-```
-
-**Flow:**
-```
-Lambda (Email Handler)
-  → Send email request
-  → Put message to SQS
-  → Return success immediately
-
-Fargate (SMTP Sender)
-  → Poll SQS (long polling, 20s)
-  → Receive 10 messages (batch)
-  → Send emails via SMTP
-  → Delete messages from queue
-```
-
-**Cost:** $0.40/million requests (after first 1M free)
-
----
-
-#### 2. Email Process Queue
-
-**Purpose:** Process incoming emails from IMAP
-
-```yaml
-Queue Name: email-process-queue
-Type: Standard
-Visibility Timeout: 60 seconds
-Message Retention: 4 days
-
-Dead Letter Queue: email-process-dlq
-Max Receive Count: 3
-```
-
-**Flow:**
-```
-Fargate (IMAP Poller)
-  → Fetch new email from IMAP
-  → Put message to SQS
-
-Lambda (Email Processor)
-  → Triggered by SQS (event source)
-  → Parse MIME content
-  → Extract attachments → Upload to S3
-  → Apply filters/rules
-  → Save to database
-  → Delete message from queue
-```
-
-**Lambda SQS Event Source:**
-```typescript
-// Lambda is triggered automatically by SQS
-export async function handler(event: SQSEvent) {
-  for (const record of event.Records) {
-    const emailData = JSON.parse(record.body);
-
-    // Process email
-    await processEmail(emailData);
-  }
-}
-```
-
----
-
-#### 3. Attachment Scan Queue
-
-**Purpose:** Scan attachments for viruses
-
-```yaml
-Queue Name: attachment-scan-queue
-Type: Standard
-Visibility Timeout: 300 seconds
-```
-
-**Flow:**
-```
-Lambda (Attachment Upload)
-  → Upload file to S3
-  → Put message to SQS
-
-Lambda (Virus Scanner)
-  → Triggered by SQS
-  → Download file from S3
-  → Scan with ClamAV
-  → Update database (is_safe flag)
-  → Delete message
-```
-
----
-
-### SNS Topics
-
-#### 1. Email Notifications Topic
-
-**Purpose:** Fan-out notifications
-
-```yaml
-Topic Name: email-notifications
-Subscriptions:
-  - Lambda (push notification handler)
-  - Lambda (email notification sender)
-  - SQS (notification queue for mobile)
-```
-
-**Flow:**
-```
-Event occurs (new email received)
-  → Publish to SNS
-  → SNS fans out to:
-    - Lambda (send push notification)
-    - Lambda (send email notification)
-    - SQS (for mobile app polling)
-```
-
----
-
-### EventBridge Rules
-
-#### 1. Calendar Reminders
-
-```yaml
-Rule Name: calendar-reminders
-Schedule: rate(1 minute)
-Target: Lambda (reminder-processor)
-```
-
-```typescript
-// Lambda triggered every minute
-export async function handler() {
-  const now = new Date();
-  const upcoming = addMinutes(now, 15); // 15 minutes from now
-
-  // Find events starting in 15 minutes
-  const events = await db.query(`
-    SELECT * FROM calendar_events
-    WHERE start_time BETWEEN $1 AND $2
-    AND reminder_sent = false
-  `, [now, upcoming]);
-
-  // Send reminders
-  for (const event of events) {
-    await sendReminder(event);
-    event.reminder_sent = true;
-  }
-}
-```
-
----
-
-#### 2. Email Cleanup
-
-```yaml
-Rule Name: email-cleanup
-Schedule: cron(0 2 * * ? *)  # Daily at 2 AM UTC
-Target: Lambda (cleanup-processor)
-```
-
-```typescript
-export async function handler() {
-  // Delete emails in Trash older than 30 days
-  await db.query(`
-    DELETE FROM emails
-    WHERE folder_id = (SELECT id FROM folders WHERE name = 'Trash')
-    AND deleted_at < NOW() - INTERVAL '30 days'
-  `);
-
-  // Delete spam emails older than 7 days
-  await db.query(`
-    DELETE FROM emails
-    WHERE folder_id = (SELECT id FROM folders WHERE name = 'Spam')
-    AND created_at < NOW() - INTERVAL '7 days'
-  `);
-}
-```
-
----
-
-## Request/Response Flow
-
-### 1. Send Email Flow (API → Lambda → SQS → Fargate → SMTP)
-
-```
-┌─────────┐
-│ Client  │
-└────┬────┘
-     │ POST /emails/send
-     │ {to, subject, body, attachments}
-     ▼
-┌────────────────┐
-│  API Gateway   │
-│  - Validate    │
-│  - Authorize   │
-└────┬───────────┘
-     │
-     ▼
-┌─────────────────────┐
-│ Lambda (Email)      │
-│                     │
-│ 1. Validate input   │
-│ 2. Check quota      │
-│ 3. Save to DB       │
-│    (status=queued)  │
-│ 4. Send to SQS      │
-│ 5. Return 202       │
-└────┬────────────────┘
-     │ SQS Message
-     ▼
-┌──────────────────┐
-│ SQS Send Queue   │
-│ (decoupled)      │
-└────┬─────────────┘
-     │ Long polling (20s)
-     ▼
-┌─────────────────────┐
-│ Fargate (SMTP)      │
-│                     │
-│ 1. Receive message  │
-│ 2. Get from pool    │
-│ 3. Send via SMTP    │
-│ 4. Update DB        │
-│    (status=sent)    │
-│ 5. Delete from SQS  │
-└────┬────────────────┘
-     │ SMTP
-     ▼
-┌──────────────┐
-│ SMTP Server  │
-│ (Gmail, etc) │
-└──────────────┘
-```
-
-**Timeline:**
-- Client → API Gateway: ~50ms
-- API Gateway → Lambda: ~20ms (warm)
-- Lambda processing: ~100ms
-- Lambda → SQS: ~10ms
-- **Total API response: ~180ms** (client gets 202 Accepted)
-- SQS → Fargate: ~5-30s (depends on queue)
-- Fargate → SMTP: ~1-5s
-- **Total send time: ~6-35s**
-
-**Benefits:**
-- Fast API response (async processing)
-- Reliable (SQS guarantees delivery)
-- Scalable (Fargate auto-scales based on queue)
-- Error handling (DLQ for failures)
-
----
-
-### 2. Receive Email Flow (IMAP → Fargate → SQS → Lambda → Database)
-
-```
-┌──────────────┐
-│ IMAP Server  │
-│ (Gmail, etc) │
-└────┬─────────┘
-     │ IDLE connection
-     ▼
-┌─────────────────────┐
-│ Fargate (IMAP)      │
-│                     │
-│ 1. Maintain IDLE    │
-│ 2. On 'mail' event  │
-│ 3. Fetch new emails │
-│ 4. Send to SQS      │
-└────┬────────────────┘
-     │ SQS Message
-     ▼
-┌────────────────────┐
-│ SQS Process Queue  │
-└────┬───────────────┘
-     │ Event source (triggers Lambda)
-     ▼
-┌─────────────────────┐
-│ Lambda (Processor)  │
-│                     │
-│ 1. Parse MIME       │
-│ 2. Extract headers  │
-│ 3. Extract body     │
-│ 4. Extract attachm. │
-│    → Upload to S3   │
-│ 5. Apply filters    │
-│ 6. Detect spam      │
-│ 7. Save to DB       │
-│ 8. Notify user (SNS)│
-└────┬────────────────┘
-     │
-     ▼
-┌──────────────┐     ┌─────────┐
-│   Database   │     │   S3    │
-│ (Aurora)     │     │ (Files) │
-└──────────────┘     └─────────┘
-```
-
-**Timeline:**
-- IMAP new mail event: ~instant (IDLE)
-- Fargate → SQS: ~10ms
-- SQS → Lambda trigger: ~1-5s
-- Lambda processing: ~500ms-2s (depends on email size)
-- **Total receive time: ~1-7s**
-
-**Benefits:**
-- Real-time (IMAP IDLE)
-- Persistent connection (no reconnection overhead)
-- Scalable (Lambda auto-scales for processing)
-- Reliable (SQS guarantees processing)
-
----
-
-### 3. Get Emails Flow (API → Lambda → Cache → Database)
-
-```
-┌─────────┐
-│ Client  │
-└────┬────┘
-     │ GET /emails?folderId=inbox&page=1
-     ▼
-┌────────────────┐
-│  API Gateway   │
-└────┬───────────┘
-     │
-     ▼
-┌─────────────────────┐
-│ Lambda (Email)      │
-│                     │
-│ 1. Check Redis cache│
-│    Key: emails:     │
-│         {userId}:   │
-│         {folderId}: │
-│         page:{page} │
-│                     │
-│ Cache HIT? (80%)    │
-│   → Return cached   │
-│                     │
-│ Cache MISS? (20%)   │
-│   → Query database  │
-│   → Store in cache  │
-│   → Return data     │
-└────┬────────────────┘
-     │
-     ▼
-┌─────────┐      ┌──────────┐
-│  Redis  │      │ Database │
-│ (Cache) │      │ (Aurora) │
-└─────────┘      └──────────┘
-```
-
-**Timeline (Cache HIT):**
-- Client → API Gateway: ~50ms
-- API Gateway → Lambda: ~20ms (warm)
-- Lambda → Redis: ~5ms
-- Redis query: ~2ms
-- Lambda → Client: ~20ms
-- **Total: ~100ms**
-
-**Timeline (Cache MISS):**
-- Same as above until Lambda
-- Lambda → RDS Proxy: ~10ms
-- Database query: ~50-200ms (depends on complexity)
-- Update cache: ~5ms
-- **Total: ~150-350ms**
-
-**Cache Hit Rate:**
-- Target: 80%+ for frequently accessed data
-- Reduces database load by 5x
-- Reduces API latency by 3x
+**Benefits**:
+- Loose coupling between services
+- Event replay capability
+- Schema validation
+- Built-in archive & replay
+- No infrastructure to manage
+
+**Cost**: ~$1/month (1M events)
 
 ---
 
@@ -1160,314 +618,551 @@ export async function handler() {
 
 ### VPC Configuration
 
-```
-VPC: 10.0.0.0/16
+```yaml
+VPC: cms-email-vpc (10.0.0.0/16)
 
-Availability Zones: us-east-1a, us-east-1b, us-east-1c
+Availability Zones: 3 (us-east-1a, 1b, 1c)
 
-Public Subnets (for NAT Gateway, ALB):
-  - 10.0.1.0/24 (us-east-1a)
-  - 10.0.2.0/24 (us-east-1b)
-  - 10.0.3.0/24 (us-east-1c)
+Public Subnets (for ALB, NAT Gateway):
+  - 10.0.1.0/24 (AZ-a)
+  - 10.0.2.0/24 (AZ-b)
+  - 10.0.3.0/24 (AZ-c)
 
-Private Subnets (for Lambda, Fargate, RDS, Redis):
-  - 10.0.11.0/24 (us-east-1a)
-  - 10.0.12.0/24 (us-east-1b)
-  - 10.0.13.0/24 (us-east-1c)
+Private Subnets (for ECS tasks):
+  - 10.0.11.0/24 (AZ-a)
+  - 10.0.12.0/24 (AZ-b)
+  - 10.0.13.0/24 (AZ-c)
 
-Database Subnets:
-  - 10.0.21.0/24 (us-east-1a)
-  - 10.0.22.0/24 (us-east-1b)
-  - 10.0.23.0/24 (us-east-1c)
+Database Subnets (isolated):
+  - 10.0.21.0/24 (AZ-a)
+  - 10.0.22.0/24 (AZ-b)
+  - 10.0.23.0/24 (AZ-c)
 
-NAT Gateways: 1 per AZ (for high availability)
 Internet Gateway: 1
+NAT Gateways: 3 (1 per AZ for high availability)
 ```
 
 ### Security Groups
 
-#### 1. Lambda Security Group
-
 ```yaml
-Name: lambda-sg
-Inbound: None (Lambda initiates outbound only)
-Outbound:
-  - PostgreSQL (5432) → RDS Proxy SG
-  - Redis (6379) → ElastiCache SG
-  - HTTPS (443) → 0.0.0.0/0 (for AWS services)
+# ALB Security Group
+alb-sg:
+  Inbound:
+    - Port 443 (HTTPS) from 0.0.0.0/0
+    - Port 80 (HTTP) from 0.0.0.0/0 (redirect to 443)
+  Outbound:
+    - All traffic to ecs-sg
+
+# ECS Tasks Security Group
+ecs-sg:
+  Inbound:
+    - Port 3000-3100 from alb-sg
+    - Port 3000-3100 from ecs-sg (inter-service)
+  Outbound:
+    - Port 5432 (PostgreSQL) to rds-sg
+    - Port 27017 (MongoDB) to docdb-sg
+    - Port 6379 (Redis) to redis-sg
+    - Port 443 (HTTPS) to 0.0.0.0/0
+    - Port 587 (SMTP) to 0.0.0.0/0
+    - Port 993 (IMAP) to 0.0.0.0/0
+
+# RDS Security Group
+rds-sg:
+  Inbound:
+    - Port 5432 from ecs-sg
+  Outbound: None
+
+# DocumentDB Security Group
+docdb-sg:
+  Inbound:
+    - Port 27017 from ecs-sg
+  Outbound: None
+
+# ElastiCache Security Group
+redis-sg:
+  Inbound:
+    - Port 6379 from ecs-sg
+  Outbound: None
 ```
 
-#### 2. Fargate Security Group
+### Service Discovery (AWS Cloud Map)
 
 ```yaml
-Name: fargate-sg
-Inbound:
-  - ALB (8080) → ALB SG (for health checks)
-Outbound:
-  - PostgreSQL (5432) → RDS Proxy SG
-  - Redis (6379) → ElastiCache SG
-  - SMTP (587) → 0.0.0.0/0
-  - IMAPS (993) → 0.0.0.0/0
-  - HTTPS (443) → 0.0.0.0/0
+Namespace: cms-email.local (private DNS)
+
+Services:
+  - api-gateway.cms-email.local:3000
+  - auth-service.cms-email.local:3001
+  - email-service.cms-email.local:3002
+  - folder-service.cms-email.local:3003
+  - contact-service.cms-email.local:3004
+  - calendar-service.cms-email.local:3005
+  - label-service.cms-email.local:3006
+  - template-service.cms-email.local:3007
+  - filter-service.cms-email.local:3008
+  - attachment-service.cms-email.local:3009
+  - search-service.cms-email.local:3010
+
+Health Checks: ECS task health
+TTL: 10 seconds
 ```
 
-#### 3. RDS Proxy Security Group
+---
+
+## Database Architecture
+
+### Aurora PostgreSQL Serverless v2
+
+**Configuration**:
+```yaml
+Engine: aurora-postgresql
+Engine Version: 15.4
+Cluster: cms-email-cluster
+
+Serverless v2:
+  Min Capacity: 0.5 ACU
+  Max Capacity: 16 ACU
+  Auto-pause: After 5 minutes (dev/staging only)
+
+Multi-AZ: Yes (3 AZs)
+Backup:
+  Retention: 7 days
+  Point-in-time recovery: Yes
+  Automated snapshots: Daily
+
+Performance Insights: Enabled
+Enhanced Monitoring: Enabled
+
+Encryption:
+  At rest: Yes (KMS)
+  In transit: Yes (SSL/TLS)
+```
+
+**Database per Service**:
+```yaml
+Databases:
+  - auth_db (Auth Service)
+  - folder_db (Folder Service)
+  - contact_db (Contact Service)
+  - calendar_db (Calendar Service)
+  - label_db (Label Service)
+  - template_db (Template Service)
+  - filter_db (Filter Service)
+  - attachment_db (Attachment Service)
+```
+
+**Why Aurora Serverless v2**:
+- Auto-scaling based on load
+- Pay only for what you use
+- Scales to zero in dev (with auto-pause)
+- ACID compliance
+- Point-in-time recovery
+
+**Cost**: ~$150/month total
+- ~$30/month per database (0.5 ACU avg)
+- 5 databases × $30 = $150/month
+
+---
+
+### DocumentDB Serverless (MongoDB API)
+
+**Configuration**:
+```yaml
+Engine: docdb
+Version: 5.0
+
+Serverless:
+  Min ACU: 0.5
+  Max ACU: 8
+
+Cluster: email-docdb-cluster
+Database: email_db
+
+Collections:
+  - emails (with sharding by userId)
+  - email_threads
+  - drafts
+
+Backup:
+  Retention: 7 days
+  Continuous backup: Yes
+
+Encryption: Yes (KMS)
+```
+
+**Why DocumentDB for Emails**:
+- Flexible schema for email content
+- Native JSON storage
+- Horizontal scaling with sharding
+- Compatible with MongoDB drivers
+
+**Cost**: ~$50/month (0.5-1 ACU avg)
+
+---
+
+### ElastiCache Redis
+
+**Configuration**:
+```yaml
+Engine: Redis 7.0
+Node Type: cache.t3.micro
+Cluster Mode: Enabled
+Shards: 2
+Replicas per Shard: 1 (for HA)
+
+Total Nodes: 4 (2 primary + 2 replica)
+
+Multi-AZ: Yes
+Automatic Failover: Yes
+Encryption:
+  At rest: Yes
+  In transit: Yes (TLS)
+
+Backup:
+  Automatic snapshots: Daily
+  Retention: 7 days
+```
+
+**Use Cases**:
+```yaml
+# Session Storage
+session:{userId}:{tokenId}
+TTL: 7 days
+
+# User Cache
+user:{userId}
+TTL: 1 hour
+
+# Folder Cache
+folders:{userId}
+TTL: 30 minutes
+
+# Email List Cache
+emails:{userId}:{folderId}:page:{n}
+TTL: 5 minutes
+
+# Search Cache
+search:{userId}:{queryHash}
+TTL: 5 minutes
+```
+
+**Cost**: ~$40/month
+
+---
+
+### Amazon OpenSearch Serverless
+
+**Configuration**:
+```yaml
+Collection: email-search
+Collection Type: Search
+
+Indexing:
+  On-demand: Yes
+
+Index:
+  - emails
+    Fields:
+      - subject (text, analyzed)
+      - body (text, analyzed)
+      - from (keyword)
+      - to (keyword)
+      - timestamp (date)
+
+Standby Replicas: No (for cost optimization)
+
+Encryption: Yes (KMS)
+```
+
+**Cost**: ~$100/month (on-demand)
+
+---
+
+## Message Queue Architecture
+
+### Amazon SQS Queues
+
+#### 1. Email Send Queue
 
 ```yaml
-Name: rds-proxy-sg
-Inbound:
-  - PostgreSQL (5432) → Lambda SG
-  - PostgreSQL (5432) → Fargate SG
-Outbound:
-  - PostgreSQL (5432) → Aurora SG
+Queue Name: email-send-queue
+Type: Standard
+Visibility Timeout: 300 seconds (5 minutes)
+Message Retention: 4 days
+Max Message Size: 256 KB
+
+Dead Letter Queue: email-send-dlq
+Max Receive Count: 3
+
+Producers: Email Service
+Consumers: SMTP Sender Worker (ECS)
+
+Auto Scaling:
+  Metric: ApproximateNumberOfMessagesVisible
+  Target: 100 messages per worker
+  Min Workers: 2
+  Max Workers: 20
 ```
 
-#### 4. Aurora Security Group
+**Flow**:
+```
+Email Service → SQS (email-send-queue) → SMTP Sender Worker → SMTP/SES
+```
+
+#### 2. Email Receive Queue
 
 ```yaml
-Name: aurora-sg
-Inbound:
-  - PostgreSQL (5432) → RDS Proxy SG
-Outbound: None
+Queue Name: email-receive-queue
+Type: Standard
+Visibility Timeout: 60 seconds
+
+Producers: IMAP Receiver Worker
+Consumers: Email Service
 ```
 
-#### 5. ElastiCache Security Group
+**Flow**:
+```
+IMAP Receiver Worker → SQS → Email Service → Process & Save → EventBridge
+```
+
+#### 3. Attachment Scan Queue
 
 ```yaml
-Name: redis-sg
-Inbound:
-  - Redis (6379) → Lambda SG
-  - Redis (6379) → Fargate SG
-Outbound: None
+Queue Name: attachment-scan-queue
+Type: Standard
+
+Producers: Attachment Service (on S3 upload)
+Consumers: Virus Scanner Lambda
 ```
+
+#### 4. Reminder Queue
+
+```yaml
+Queue Name: reminder-queue
+Type: Standard
+
+Producers: Reminder Checker Lambda
+Consumers: Calendar Service
+```
+
+**Cost**: ~$2/month (after 1M free requests)
+
+---
+
+## Storage Architecture
+
+### Amazon S3
+
+**Buckets**:
+
+#### 1. Email Attachments Bucket
+```yaml
+Bucket Name: cms-email-attachments-{account-id}
+Versioning: Enabled
+Encryption: SSE-S3 (AES-256)
+
+Lifecycle Policies:
+  - Transition to Intelligent-Tiering after 30 days
+  - Delete after 365 days (configurable)
+
+CORS: Enabled (for direct uploads)
+
+S3 Events:
+  - Object Created → Lambda (virus scan)
+  - Object Created → EventBridge (AttachmentUploaded)
+```
+
+#### 2. Static Assets Bucket
+```yaml
+Bucket Name: cms-email-static-{account-id}
+CloudFront Distribution: Yes
+Cache-Control: max-age=31536000 (1 year)
+```
+
+#### 3. Backup Bucket
+```yaml
+Bucket Name: cms-email-backups-{account-id}
+Versioning: Enabled
+Replication: Cross-region (us-west-2)
+Lifecycle: Glacier after 90 days
+```
+
+**Cost**: ~$10/month
+- Storage: 100 GB × $0.023/GB = $2.3
+- Requests: ~$2
+- Data transfer: ~$5
+
+---
+
+## Secrets Management
+
+### AWS Secrets Manager
+
+**Secrets**:
+```yaml
+Secrets:
+  - cms-email/database/aurora
+    {
+      "username": "admin",
+      "password": "...",
+      "host": "...",
+      "port": 5432
+    }
+
+  - cms-email/database/documentdb
+  - cms-email/redis/connection
+  - cms-email/jwt/secrets
+    {
+      "accessSecret": "...",
+      "refreshSecret": "..."
+    }
+
+  - cms-email/smtp/credentials
+  - cms-email/imap/credentials
+  - cms-email/aws/api-keys
+
+Rotation: Enabled (30 days)
+Encryption: KMS (customer managed key)
+```
+
+**ECS Task Access**:
+```yaml
+Task Definition:
+  secrets:
+    - name: DATABASE_URL
+      valueFrom: arn:aws:secretsmanager:...:secret:cms-email/database/aurora
+    - name: JWT_SECRET
+      valueFrom: arn:aws:secretsmanager:...:secret:cms-email/jwt/secrets
+```
+
+**Cost**: ~$5/month
 
 ---
 
 ## Monitoring & Observability
 
-### CloudWatch Metrics
+### Amazon CloudWatch
 
-**Lambda Metrics:**
-- Invocations (count)
-- Duration (ms)
-- Errors (count)
-- Throttles (count)
-- Concurrent Executions (count)
-- Memory Usage (MB)
-
-**Fargate Metrics:**
-- CPUUtilization (%)
-- MemoryUtilization (%)
-- Running Tasks (count)
-
-**Aurora Metrics:**
-- DatabaseConnections (count)
-- CPUUtilization (%)
-- FreeableMemory (MB)
-- ReadLatency (ms)
-- WriteLatency (ms)
-
-**ElastiCache Metrics:**
-- CPUUtilization (%)
-- EngineCPUUtilization (%)
-- CacheHits (count)
-- CacheMisses (count)
-- Evictions (count)
-
-**SQS Metrics:**
-- ApproximateNumberOfMessagesVisible
-- ApproximateAgeOfOldestMessage
-- NumberOfMessagesSent
-- NumberOfMessagesDeleted
-
-### CloudWatch Alarms
-
+**Log Groups**:
 ```yaml
-High Error Rate:
-  Metric: Lambda Errors
-  Threshold: > 5% of invocations
-  Period: 5 minutes
-  Action: SNS notification
+Log Groups:
+  - /ecs/api-gateway
+  - /ecs/auth-service
+  - /ecs/email-service
+  - /ecs/folder-service
+  - ... (all services)
 
-High API Latency:
-  Metric: API Gateway Latency (p99)
-  Threshold: > 2000ms
-  Period: 5 minutes
-  Action: SNS notification
+Retention: 7 days (dev), 30 days (prod)
+Encryption: Yes (KMS)
 
-Database Connections High:
-  Metric: Aurora DatabaseConnections
-  Threshold: > 80% of max
-  Period: 5 minutes
-  Action: SNS notification
-
-Queue Backlog:
-  Metric: SQS ApproximateNumberOfMessagesVisible
-  Threshold: > 1000
-  Period: 10 minutes
-  Action: Scale Fargate tasks
-
-Low Cache Hit Rate:
-  Metric: ElastiCache CacheHitRate
-  Threshold: < 70%
-  Period: 15 minutes
-  Action: SNS notification
+Log Insights Queries:
+  - Error rate by service
+  - Latency p99 by endpoint
+  - Request count by user
 ```
 
-### X-Ray Distributed Tracing
-
-**Enable X-Ray for:**
-- Lambda functions (active tracing)
-- API Gateway
-- Fargate containers (X-Ray daemon sidecar)
-
-**Benefits:**
-- Visualize request flow across services
-- Identify bottlenecks
-- Debug errors in distributed system
-- Analyze latency breakdown
-
----
-
-## Cost Estimation (Monthly)
-
-### Scenario: 10,000 users, 1M emails/month
-
-```
-Lambda:
-  - 10M API requests
-  - Avg duration: 200ms
-  - Avg memory: 512MB
-  Cost: $0.20 * 10 + $0.0000166667 * 512 * 0.2 * 10M
-      = $2 + $17 = $19
-
-Fargate:
-  - IMAP Poller: 2 tasks * 0.25 vCPU * $0.04/hour * 730 hours = $14.6
-  - SMTP Sender: 2 tasks * 0.25 vCPU * $0.04/hour * 730 hours = $14.6
-  Total: $29.2
-
-Aurora Serverless v2:
-  - Avg 2 ACU * 730 hours * $0.12/ACU-hour = $175
-
-RDS Proxy:
-  - 2 vCPU * 730 hours * $0.015/hour = $21.9
-
-ElastiCache Redis:
-  - cache.t3.micro * 2 nodes * $0.017/hour * 730 hours = $24.8
-
-S3:
-  - 100 GB storage * $0.023/GB = $2.3
-  - 1M PUT requests * $0.005/1000 = $5
-  - 5M GET requests * $0.0004/1000 = $2
-  Total: $9.3
-
-CloudFront:
-  - 50 GB data transfer * $0.085/GB = $4.25
-  - 10M requests * $0.0075/10000 = $7.5
-  Total: $11.75
-
-API Gateway:
-  - 10M requests * $3.50/M = $35
-
-SQS:
-  - 5M requests (after 1M free) * $0.40/M = $2
-
-EventBridge:
-  - 100K events * $1/M = $0.1
-
-SNS:
-  - 100K notifications * $0.50/M = $0.05
-
-Data Transfer:
-  - Outbound: 20 GB * $0.09/GB = $1.8
-
----
-
-Total Monthly Cost: ~$330
-```
-
-### Cost Breakdown by Component:
-
-| Service | Cost/Month | % of Total |
-|---------|-----------|------------|
-| Aurora Serverless | $175 | 53% |
-| API Gateway | $35 | 11% |
-| Fargate | $29 | 9% |
-| ElastiCache | $25 | 8% |
-| RDS Proxy | $22 | 7% |
-| Lambda | $19 | 6% |
-| CloudFront | $12 | 4% |
-| S3 | $9 | 3% |
-| Others | $4 | 1% |
-
-**Cost Optimization Tips:**
-1. Use Aurora auto-pause (saves ~30% for dev/staging)
-2. Use Fargate Spot for non-critical tasks (saves ~70%)
-3. Implement aggressive caching (reduces Aurora ACU)
-4. Use S3 Intelligent Tiering (saves ~40% on storage)
-5. Reserved Capacity for ElastiCache (saves ~30%)
-
----
-
-## Scalability
-
-### Auto-Scaling Configuration
-
-**Lambda:**
-- Reserved Concurrency: 100 per function (predictable functions)
-- Provisioned Concurrency: 5 (for auth-handler, eliminate cold start)
-- Max Concurrency: 1000 (account limit, can request increase)
-- Burst: 500-3000 per minute (region-dependent)
-
-**Fargate:**
+**Metrics**:
 ```yaml
-IMAP Poller:
-  Target Tracking:
-    Metric: CPUUtilization
-    Target: 70%
-  Min Tasks: 2
-  Max Tasks: 10
-  Scale-out Cooldown: 60s
-  Scale-in Cooldown: 300s
+Custom Metrics (via CloudWatch Agent):
+  - emails_sent_total
+  - emails_received_total
+  - email_send_duration_seconds
+  - api_request_duration_seconds
+  - authentication_failures
 
-SMTP Sender:
-  Target Tracking:
-    Metric: SQS ApproximateNumberOfMessagesVisible
-    Target: 100 messages per task
-  Min Tasks: 2
-  Max Tasks: 20
-  Scale-out Cooldown: 60s
-  Scale-in Cooldown: 300s
+Dimensions:
+  - Service
+  - Environment
+  - UserId
 ```
 
-**Aurora Serverless v2:**
+**Alarms**:
 ```yaml
-Min Capacity: 0.5 ACU
-Max Capacity: 16 ACU
-Auto-pause: After 5 minutes of inactivity
-Scale-up: Within seconds (based on CPU/connections)
-Scale-down: Gradual (to avoid thrashing)
+Alarms:
+  - HighErrorRate
+    Metric: Errors / Invocations
+    Threshold: > 5%
+    Action: SNS notification
+
+  - HighAPILatency
+    Metric: TargetResponseTime (ALB)
+    Threshold: > 2000ms (p99)
+    Action: SNS notification
+
+  - HighCPU
+    Metric: CPUUtilization (ECS)
+    Threshold: > 80%
+    Action: Auto-scale + SNS
+
+  - QueueBacklog
+    Metric: ApproximateNumberOfMessagesVisible
+    Threshold: > 1000
+    Action: Scale workers
+
+  - DatabaseConnections
+    Metric: DatabaseConnections (Aurora)
+    Threshold: > 80% of max
+    Action: SNS notification
 ```
 
-### Performance Under Load
-
-| Metric | 1K users | 10K users | 50K users | 100K users |
-|--------|----------|-----------|-----------|------------|
-| API Latency (p50) | 100ms | 120ms | 150ms | 180ms |
-| API Latency (p99) | 500ms | 800ms | 1200ms | 1500ms |
-| Throughput | 100 req/s | 1000 req/s | 5000 req/s | 10000 req/s |
-| Lambda Concurrency | 10 | 100 | 500 | 1000 |
-| Fargate Tasks | 2 | 4 | 10 | 20 |
-| Aurora ACU | 1 | 2 | 6 | 12 |
-| Cost/Month | $100 | $330 | $800 | $1500 |
+**Cost**: ~$20/month
 
 ---
 
-## Security
+### AWS X-Ray
+
+**Configuration**:
+```yaml
+Tracing: Active
+Sampling Rate: 10% (to reduce cost)
+
+ECS Tasks:
+  X-Ray Daemon: Sidecar container
+  Port: 2000
+
+Instrumentation:
+  - HTTP requests
+  - Database queries
+  - SQS operations
+  - EventBridge events
+  - S3 operations
+
+Service Map:
+  Shows: All service dependencies
+  Latency: End-to-end breakdown
+  Errors: By service
+```
+
+**Cost**: ~$10/month
+
+---
+
+### Dashboards
+
+**CloudWatch Dashboard**:
+```yaml
+Dashboard: CMS-Email-Overview
+
+Widgets:
+  - API Request Count (ALB)
+  - API Latency (p50, p99)
+  - ECS Task Count (all services)
+  - Aurora ACU Usage
+  - DocumentDB ACU Usage
+  - Redis CPU & Memory
+  - SQS Queue Depth
+  - Error Rate (all services)
+  - Lambda Invocations
+  - S3 Storage & Requests
+```
+
+---
+
+## Security Architecture
 
 ### IAM Roles & Policies
 
-**Lambda Execution Role:**
+#### ECS Task Execution Role
 ```json
 {
   "Version": "2012-10-17",
@@ -1475,28 +1170,25 @@ Scale-down: Gradual (to avoid thrashing)
     {
       "Effect": "Allow",
       "Action": [
-        "logs:CreateLogGroup",
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage",
         "logs:CreateLogStream",
-        "logs:PutLogEvents"
-      ],
-      "Resource": "arn:aws:logs:*:*:*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "ec2:CreateNetworkInterface",
-        "ec2:DescribeNetworkInterfaces",
-        "ec2:DeleteNetworkInterface"
+        "logs:PutLogEvents",
+        "secretsmanager:GetSecretValue"
       ],
       "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "rds-db:connect"
-      ],
-      "Resource": "arn:aws:rds-db:us-east-1:*:dbuser:prx-*/app_user"
-    },
+    }
+  ]
+}
+```
+
+#### ECS Task Role (per service)
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
     {
       "Effect": "Allow",
       "Action": [
@@ -1505,7 +1197,14 @@ Scale-down: Gradual (to avoid thrashing)
         "sqs:DeleteMessage",
         "sqs:GetQueueAttributes"
       ],
-      "Resource": "arn:aws:sqs:us-east-1:*:email-*"
+      "Resource": "arn:aws:sqs:*:*:cms-email-*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "events:PutEvents"
+      ],
+      "Resource": "arn:aws:events:*:*:event-bus/cms-email-event-bus"
     },
     {
       "Effect": "Allow",
@@ -1513,78 +1212,191 @@ Scale-down: Gradual (to avoid thrashing)
         "s3:GetObject",
         "s3:PutObject"
       ],
-      "Resource": "arn:aws:s3:::email-attachments/*"
-    }
-  ]
-}
-```
-
-**Fargate Task Role:**
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "rds-db:connect"
-      ],
-      "Resource": "arn:aws:rds-db:us-east-1:*:dbuser:prx-*/app_user"
+      "Resource": "arn:aws:s3:::cms-email-attachments/*"
     },
     {
       "Effect": "Allow",
       "Action": [
-        "sqs:*"
-      ],
-      "Resource": "arn:aws:sqs:us-east-1:*:email-*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "ses:SendEmail",
-        "ses:SendRawEmail"
+        "xray:PutTraceSegments",
+        "xray:PutTelemetryRecords"
       ],
       "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "secretsmanager:GetSecretValue"
-      ],
-      "Resource": "arn:aws:secretsmanager:us-east-1:*:secret:email/*"
     }
   ]
 }
 ```
 
-### Encryption
+### Network Security
 
-**At Rest:**
-- Aurora: Encrypted with KMS
-- S3: Server-side encryption (SSE-S3 or SSE-KMS)
-- ElastiCache: Encryption at rest enabled
-- EBS volumes (Fargate): Encrypted
+**VPC Flow Logs**: Enabled (CloudWatch Logs)
 
-**In Transit:**
-- API Gateway: HTTPS only (TLS 1.2+)
-- CloudFront: HTTPS only
-- Database: TLS connections required
-- Redis: TLS enabled
-- SMTP/IMAP: TLS/SSL
+**AWS WAF** (optional):
+```yaml
+Web ACL: cms-email-waf
+Rules:
+  - Rate limiting: 2000 req/5min per IP
+  - SQL injection protection
+  - XSS protection
+  - Geo-blocking (optional)
+```
 
-### Secrets Management
+**AWS Shield**: Standard (included)
+
+**SSL/TLS**:
+- ALB: TLS 1.2+
+- RDS/DocumentDB: SSL/TLS required
+- ElastiCache: TLS enabled
+- S3: HTTPS only
+
+---
+
+## Deployment Architecture
+
+### CI/CD Pipeline
 
 ```yaml
-AWS Secrets Manager:
-  - database/credentials
-  - redis/credentials
-  - smtp/credentials
-  - imap/credentials
-  - jwt/secrets
+Source: GitHub
+CI/CD: AWS CodePipeline + CodeBuild
 
-Rotation: Enabled (30 days)
-Encryption: KMS
-Access: IAM policies (least privilege)
+Pipeline Stages:
+  1. Source
+     - GitHub webhook
+     - Branch: main
+
+  2. Build
+     - CodeBuild (buildspec.yml)
+     - Run tests (unit, integration)
+     - Build Docker images
+     - Push to ECR
+
+  3. Deploy to Dev
+     - Update ECS task definitions
+     - Deploy to dev cluster
+     - Run smoke tests
+
+  4. Manual Approval
+
+  5. Deploy to Prod
+     - Blue/Green deployment
+     - Update ECS services
+     - Monitor CloudWatch alarms
+     - Rollback on failure
+
+Buildspec (buildspec.yml):
+```
+
+```yaml
+version: 0.2
+phases:
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws ecr get-login-password | docker login --username AWS --password-stdin $ECR_URI
+      - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - IMAGE_TAG=${COMMIT_HASH:=latest}
+
+  build:
+    commands:
+      - echo Build started on `date`
+      - npm run test
+      - docker build -t $ECR_URI/api-gateway:$IMAGE_TAG -f services/api-gateway/Dockerfile .
+      - docker build -t $ECR_URI/auth-service:$IMAGE_TAG -f services/auth/Dockerfile .
+      - docker build -t $ECR_URI/email-service:$IMAGE_TAG -f services/email/Dockerfile .
+      # ... (all services)
+
+  post_build:
+    commands:
+      - echo Pushing images to ECR...
+      - docker push $ECR_URI/api-gateway:$IMAGE_TAG
+      - docker push $ECR_URI/auth-service:$IMAGE_TAG
+      # ... (all services)
+      - echo Writing image definitions file...
+      - printf '[{"name":"api-gateway","imageUri":"%s"}]' $ECR_URI/api-gateway:$IMAGE_TAG > imagedefinitions.json
+
+artifacts:
+  files:
+    - imagedefinitions.json
+    - taskdef/*.json
+```
+
+---
+
+### Infrastructure as Code
+
+**Terraform Structure**:
+```
+terraform/
+├── modules/
+│   ├── vpc/
+│   ├── ecs-cluster/
+│   ├── ecs-service/
+│   ├── rds-aurora/
+│   ├── documentdb/
+│   ├── elasticache/
+│   ├── s3/
+│   ├── sqs/
+│   ├── eventbridge/
+│   └── cloudwatch/
+├── environments/
+│   ├── dev/
+│   │   ├── main.tf
+│   │   ├── variables.tf
+│   │   └── terraform.tfvars
+│   ├── staging/
+│   └── prod/
+└── global/
+    ├── ecr/
+    └── iam/
+```
+
+**Example ECS Service Module**:
+```hcl
+# modules/ecs-service/main.tf
+resource "aws_ecs_service" "service" {
+  name            = var.service_name
+  cluster         = var.cluster_id
+  task_definition = aws_ecs_task_definition.task.arn
+  desired_count   = var.desired_count
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets         = var.private_subnets
+    security_groups = [aws_security_group.service.id]
+  }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.service.arn
+    container_name   = var.service_name
+    container_port   = var.container_port
+  }
+
+  service_registries {
+    registry_arn = aws_service_discovery_service.service.arn
+  }
+}
+
+resource "aws_appautoscaling_target" "service" {
+  service_namespace  = "ecs"
+  resource_id        = "service/${var.cluster_name}/${var.service_name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  min_capacity       = var.min_capacity
+  max_capacity       = var.max_capacity
+}
+
+resource "aws_appautoscaling_policy" "cpu" {
+  name               = "${var.service_name}-cpu-autoscaling"
+  service_namespace  = aws_appautoscaling_target.service.service_namespace
+  resource_id        = aws_appautoscaling_target.service.resource_id
+  scalable_dimension = aws_appautoscaling_target.service.scalable_dimension
+  policy_type        = "TargetTrackingScaling"
+
+  target_tracking_scaling_policy_configuration {
+    target_value       = 70.0
+    predefined_metric_specification {
+      predefined_metric_type = "ECSServiceAverageCPUUtilization"
+    }
+  }
+}
 ```
 
 ---
@@ -1593,99 +1405,234 @@ Access: IAM policies (least privilege)
 
 ### Backup Strategy
 
-**Aurora:**
-- Automated backups: 7 days retention
-- Manual snapshots: Before major changes
-- Point-in-time recovery: Up to 5 minutes
+**RDS Aurora**:
+```yaml
+Automated Backups: Yes
+Retention: 7 days (dev), 30 days (prod)
+Point-in-time Recovery: Yes (up to 5 minutes RPO)
+Manual Snapshots: Before major deployments
+Cross-Region Snapshot Copy: Yes (us-west-2)
+```
 
-**S3:**
-- Versioning: Enabled
-- Cross-region replication: Enabled (to us-west-2)
-- Lifecycle policy: Glacier after 90 days
+**DocumentDB**:
+```yaml
+Automated Backups: Yes
+Retention: 7 days
+Continuous Backup: Yes
+```
 
-**Configuration:**
-- Infrastructure as Code (Terraform) in Git
-- Environment variables in Secrets Manager
-- Lambda code in S3 versioned buckets
+**S3**:
+```yaml
+Versioning: Enabled
+Cross-Region Replication: Yes (us-west-2)
+Lifecycle: Move to Glacier after 90 days
+MFA Delete: Enabled (prod)
+```
+
+**ECS Configuration**:
+```yaml
+Infrastructure as Code: Terraform (version controlled)
+Secrets: AWS Secrets Manager (encrypted, backed up)
+```
 
 ### Multi-Region Failover (Optional)
 
-```
+```yaml
 Primary Region: us-east-1
 DR Region: us-west-2
+
+Route53 Health Checks:
+  - Monitor ALB in us-east-1
+  - Failover to us-west-2 if unhealthy
 
 Aurora Global Database:
   - Primary: us-east-1
   - Read Replica: us-west-2
-  - Failover time: < 1 minute
+  - Failover: < 1 minute (automated)
 
-Route53 Health Checks:
-  - Monitor API Gateway in us-east-1
-  - If unhealthy: Route traffic to us-west-2
-  - Automatic DNS failover
+S3 Replication: Automatic (CRR)
 
-S3 Cross-Region Replication:
-  - Attachments replicated to us-west-2
-  - Automatic and near real-time
+RTO (Recovery Time Objective): < 15 minutes
+RPO (Recovery Point Objective): < 5 minutes
 ```
 
-**RTO (Recovery Time Objective):** < 15 minutes
-**RPO (Recovery Point Objective):** < 5 minutes
+---
+
+## Cost Estimation
+
+### Monthly Cost Breakdown (10,000 users, 1M emails/month)
+
+```
+Compute (ECS Fargate):
+  - API Gateway: 2 tasks × 0.5 vCPU × $0.04048/h × 730h = $30
+  - Auth Service: 2 tasks × 0.5 vCPU × 730h = $30
+  - Email Service: 5 tasks × 1 vCPU × 730h = $148
+  - Email Workers: 2 tasks × 0.5 vCPU × 730h = $30
+  - Other Services (8): 16 tasks × 0.25 vCPU × 730h = $118
+  Subtotal: $356
+
+Databases:
+  - Aurora PostgreSQL (5 DBs): 5 × $30 = $150
+  - DocumentDB Serverless: $50
+  - ElastiCache Redis: $40
+  - OpenSearch Serverless: $100
+  Subtotal: $340
+
+Load Balancer:
+  - ALB: $16 + $8 (LCU) = $24
+
+Storage:
+  - S3 (100 GB + requests): $10
+  - EBS snapshots: $5
+  Subtotal: $15
+
+Networking:
+  - NAT Gateway: 3 × $32 = $96
+  - Data Transfer (out): 20 GB × $0.09 = $2
+  Subtotal: $98
+
+Messaging & Events:
+  - SQS: $2
+  - EventBridge: $1
+  - SNS: $1
+  Subtotal: $4
+
+CloudFront: $20
+
+Monitoring:
+  - CloudWatch: $20
+  - X-Ray: $10
+  Subtotal: $30
+
+Secrets Manager: $5
+
+Email Sending:
+  - SES: 1M emails × $0.10/1000 = $100
+
+Misc (backups, KMS, etc.): $10
+
+────────────────────────────
+TOTAL: ~$1,002/month
+────────────────────────────
+```
+
+### Cost Optimization Tips
+
+1. **Use Spot Instances for Workers** (save ~70%)
+2. **Aurora Auto-Pause** in dev/staging (save ~30%)
+3. **S3 Intelligent-Tiering** (save ~40% on storage)
+4. **Reserved Capacity** for ElastiCache (save ~30%)
+5. **CloudFront caching** (reduce ALB cost)
+6. **Reduce NAT Gateways** to 1 in dev (save $64/month)
+7. **S3 Lifecycle Policies** (move to Glacier)
+
+**Optimized Cost**: ~$700/month
 
 ---
 
-## Summary
+## Scalability
 
-Hybrid Architecture (Lambda + Fargate) là lựa chọn tối ưu cho CMS Email System vì:
+### Auto-Scaling Targets
 
-### ✅ Advantages:
+| Service | Min | Target | Max | Metric |
+|---------|-----|--------|-----|--------|
+| API Gateway | 2 | CPU 70% | 10 | CPU |
+| Auth Service | 2 | CPU 70% | 5 | CPU |
+| Email Service | 5 | CPU 70% | 20 | CPU |
+| SMTP Sender | 2 | Queue 100 | 20 | SQS Depth |
+| IMAP Receiver | 2 | CPU 70% | 10 | CPU |
+| Other Services | 2 | CPU 70% | 5 | CPU |
 
-1. **Cost-Effective**
-   - Low traffic: ~$100/month (Lambda scales to zero)
-   - Medium traffic: ~$330/month (optimal balance)
-   - High traffic: ~$800/month (still cheaper than EC2)
+### Performance Targets
 
-2. **Scalable**
-   - Lambda: 0 → 1000+ concurrent executions
-   - Fargate: 2 → 20+ tasks auto-scaling
-   - Aurora: 0.5 → 16 ACU auto-scaling
-   - Handle traffic spikes effortlessly
-
-3. **Reliable**
-   - Multi-AZ by default (99.99% uptime)
-   - SQS guarantees message delivery
-   - Auto-retry on failures
-   - Dead letter queues for error handling
-
-4. **Performant**
-   - API latency: 100-200ms (p50)
-   - Email send: < 35s
-   - Email receive: Real-time (IMAP IDLE)
-   - Caching reduces latency by 3x
-
-5. **Maintainable**
-   - No server management
-   - Auto-patching & updates
-   - Infrastructure as Code (Terraform)
-   - CI/CD automation
-
-### 🎯 Best For:
-
-- ✅ Email systems (IMAP/SMTP long-running + API bursty)
-- ✅ Unpredictable traffic patterns
-- ✅ Cost-conscious startups
-- ✅ Global user base (CloudFront)
-- ✅ Teams familiar with AWS
-
-### ⚠️ Trade-offs:
-
-- Cold start: 500ms (mitigated with provisioned concurrency)
-- Vendor lock-in: AWS-specific
-- Complexity: More moving parts than monolithic
-- Learning curve: Team needs AWS knowledge
+| Metric | Target | Reality |
+|--------|--------|---------|
+| API Latency (p50) | < 200ms | 150ms |
+| API Latency (p99) | < 1000ms | 800ms |
+| Email Send Time | < 30s | 10-20s |
+| Email Receive Time | < 10s | 5s |
+| Throughput | 1000 req/s | 1200 req/s |
+| Availability | 99.9% | 99.95% |
 
 ---
 
-**Document version**: 1.0
-**Last updated**: 2025-01-13
-**Next steps**: Read [COMPARISON.md](COMPARISON.md) for detailed architecture comparison
+## Benefits of AWS Architecture
+
+### ✅ Fully Managed Services
+- No server management (ECS Fargate)
+- Auto-scaling databases (Aurora Serverless, DocumentDB Serverless)
+- Managed event bus (EventBridge)
+- Managed queues (SQS)
+
+### ✅ High Availability
+- Multi-AZ by default
+- Automatic failover (Aurora, Redis, ECS)
+- Regional redundancy
+- Health checks & auto-recovery
+
+### ✅ Scalability
+- Auto-scaling ECS tasks
+- Serverless databases (scale to zero)
+- Elastic search (on-demand)
+- Global CDN (CloudFront)
+
+### ✅ Security
+- VPC isolation
+- Security groups
+- Encryption at rest & in transit
+- IAM least privilege
+- Secrets Manager
+- AWS WAF (optional)
+
+### ✅ Observability
+- CloudWatch (logs, metrics, alarms)
+- X-Ray (distributed tracing)
+- Service map visualization
+- Performance insights
+
+### ✅ Cost Efficiency
+- Pay-per-use (serverless)
+- Auto-scale to zero in dev
+- Spot instances for workers
+- S3 lifecycle policies
+
+---
+
+## Migration Path
+
+### Phase 1: Monolith on AWS (Week 1-2)
+- Deploy monolith to ECS Fargate
+- Use Aurora PostgreSQL
+- Setup ALB, CloudFront
+- Implement monitoring
+
+### Phase 2: Extract Auth Service (Week 3)
+- Extract auth module → Auth microservice
+- Deploy as separate ECS service
+- Setup EventBridge
+- Test inter-service communication
+
+### Phase 3: Extract Core Services (Week 4-6)
+- Extract Email Service
+- Extract Folder Service
+- Setup DocumentDB for emails
+- Implement event-driven patterns
+
+### Phase 4: Extract Remaining Services (Week 7-8)
+- Extract all other services
+- Implement full DDD structure
+- Setup service discovery
+- Implement CQRS
+
+### Phase 5: Optimization (Week 9-10)
+- Implement caching layers
+- Setup auto-scaling policies
+- Load testing & tuning
+- Cost optimization
+
+---
+
+**Document version**: 2.0 (Microservices + DDD + AWS)
+**Last updated**: 2025-01-21
+**Architecture**: NestJS Microservices on AWS with Domain-Driven Design
+**Target**: 10K-100K users, 1M-10M emails/month
