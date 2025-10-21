@@ -30,7 +30,9 @@ async function bootstrap() {
   app.enableCors();
 
   await app.listen(port);
-  logger.log(`🔐 Auth Service is running on: http://localhost:${port}/api/auth`);
+  logger.log(
+    `🔐 Auth Service is running on: http://localhost:${port}/api/auth`,
+  );
 }
 
 bootstrap();

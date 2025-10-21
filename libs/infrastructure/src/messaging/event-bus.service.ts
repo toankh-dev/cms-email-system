@@ -34,10 +34,7 @@ export class EventBusService {
   /**
    * Subscribe to a domain event
    */
-  subscribe(
-    eventType: string,
-    handler: (event: DomainEvent) => void,
-  ): void {
+  subscribe(eventType: string, handler: (event: DomainEvent) => void): void {
     this.logger.log(`Subscribing to event: ${eventType}`);
 
     if (!this.handlers.has(eventType)) {

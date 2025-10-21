@@ -25,7 +25,9 @@ async function bootstrap() {
   app.enableCors();
 
   await app.listen(port);
-  logger.log(`📁 Folder Service is running on: http://localhost:${port}/api/folders`);
+  logger.log(
+    `📁 Folder Service is running on: http://localhost:${port}/api/folders`,
+  );
 }
 
 bootstrap();

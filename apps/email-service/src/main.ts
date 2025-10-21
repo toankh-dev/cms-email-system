@@ -25,7 +25,9 @@ async function bootstrap() {
   app.enableCors();
 
   await app.listen(port);
-  logger.log(`📧 Email Service is running on: http://localhost:${port}/api/emails`);
+  logger.log(
+    `📧 Email Service is running on: http://localhost:${port}/api/emails`,
+  );
 }
 
 bootstrap();
