@@ -18,6 +18,7 @@ import {
   ChangePasswordDto,
   ForgotPasswordDto,
   ResetPasswordDto,
+  UpdateProfileDto,
 } from '../dtos';
 import {
   RegisterUserCommand,
@@ -27,6 +28,7 @@ import {
   ChangePasswordCommand,
   ForgotPasswordCommand,
   ResetPasswordCommand,
+  UpdateProfileCommand,
 } from '../../application/commands';
 import { GetUserByIdQuery } from '../../application/queries';
 import { JwtAuthGuard, Public, CurrentUser } from '../../infrastructure/auth';
@@ -118,6 +120,27 @@ export class AuthController {
     return {
       message: 'Profile retrieved successfully',
       user,
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Patch('profile')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update user profile' })
+  @ApiResponse({ status: 200, description: 'Profile updated successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async updateProfile(
+    @CurrentUser('sub') userId: string,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    const result = await this.commandBus.execute(
+      new UpdateProfileCommand(userId, dto.fullName),
+    );
+
+    return {
+      message: 'Profile updated successfully',
+      user: result,
     };
   }
 

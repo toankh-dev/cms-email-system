@@ -12,6 +12,8 @@ export * from './forgot-password.command';
 export * from './forgot-password.handler';
 export * from './reset-password.command';
 export * from './reset-password.handler';
+export * from './update-profile.command';
+export * from './update-profile.handler';
 
 import { RegisterUserHandler } from './register-user.handler';
 import { LoginUserHandler } from './login-user.handler';
@@ -20,6 +22,7 @@ import { VerifyEmailHandler } from './verify-email.handler';
 import { ChangePasswordHandler } from './change-password.handler';
 import { ForgotPasswordHandler } from './forgot-password.handler';
 import { ResetPasswordHandler } from './reset-password.handler';
+import { UpdateProfileHandler } from './update-profile.handler';
 
 export const CommandHandlers = [
   RegisterUserHandler,
@@ -29,4 +32,5 @@ export const CommandHandlers = [
   ChangePasswordHandler,
   ForgotPasswordHandler,
   ResetPasswordHandler,
+  UpdateProfileHandler,
 ];
