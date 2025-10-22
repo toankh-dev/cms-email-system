@@ -37,6 +37,21 @@ export class RefreshToken extends Entity<string> {
     return refreshToken;
   }
 
+  static reconstitute(
+    id: string,
+    token: string,
+    expiresAt: Date,
+    isRevoked: boolean,
+    createdAt: Date,
+    updatedAt: Date,
+  ): RefreshToken {
+    const refreshToken = new RefreshToken(id, token, expiresAt);
+    refreshToken.isRevoked = isRevoked;
+    refreshToken._createdAt = createdAt;
+    refreshToken._updatedAt = updatedAt;
+    return refreshToken;
+  }
+
   getToken(): string {
     return this.token;
   }

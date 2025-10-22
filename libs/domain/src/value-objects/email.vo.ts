@@ -17,6 +17,10 @@ export class Email extends ValueObject<EmailProps> {
     return this.props.value;
   }
 
+  getValue(): string {
+    return this.props.value;
+  }
+
   static create(email: string): Email {
     if (!this.isValid(email)) {
       throw new Error(`Invalid email address: ${email}`);

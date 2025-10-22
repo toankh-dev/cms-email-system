@@ -1,5 +1,5 @@
 import { ValueObject } from '@app/domain';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 interface PasswordProps {
   value: string;
@@ -19,6 +19,10 @@ export class Password extends ValueObject<PasswordProps> {
   }
 
   get value(): string {
+    return this.props.value;
+  }
+
+  getValue(): string {
     return this.props.value;
   }
 

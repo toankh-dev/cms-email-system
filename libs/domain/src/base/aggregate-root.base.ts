@@ -12,6 +12,10 @@ export abstract class AggregateRoot<T> extends Entity<T> {
     return this._domainEvents;
   }
 
+  public getDomainEvents(): DomainEvent[] {
+    return this._domainEvents;
+  }
+
   protected addDomainEvent(event: DomainEvent): void {
     this._domainEvents.push(event);
   }
