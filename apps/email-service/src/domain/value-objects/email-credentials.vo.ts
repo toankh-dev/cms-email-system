@@ -28,8 +28,6 @@ export class EmailCredentials {
   }
 
   equals(other: EmailCredentials): boolean {
-    return (
-      this._username === other._username && this._password === other._password
-    );
+    return this._username === other._username && this._password === other._password;
   }
 }

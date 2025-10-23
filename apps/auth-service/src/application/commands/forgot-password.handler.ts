@@ -5,17 +5,13 @@ import { IUserRepository } from '../../domain/repositories/user.repository.inter
 import { Email } from '@app/domain/value-objects/email.vo';
 
 @CommandHandler(ForgotPasswordCommand)
-export class ForgotPasswordHandler
-  implements ICommandHandler<ForgotPasswordCommand>
-{
+export class ForgotPasswordHandler implements ICommandHandler<ForgotPasswordCommand> {
   constructor(
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
   ) {}
 
-  async execute(
-    command: ForgotPasswordCommand,
-  ): Promise<{ success: boolean; token: string }> {
+  async execute(command: ForgotPasswordCommand): Promise<{ success: boolean; token: string }> {
     const { email: emailString } = command;
 
     // Create Email value object

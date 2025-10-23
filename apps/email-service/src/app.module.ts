@@ -11,10 +11,7 @@ import { AppService } from './app.service';
 
 // Email Account Module imports
 import { EmailAccountController } from './presentation/controllers/email-account.controller';
-import {
-  EmailAccountSchema,
-  EmailAccountSchemaDefinition,
-} from './infrastructure/persistence/schemas/email-account.schema';
+import { EmailAccountSchema, EmailAccountSchemaDefinition } from './infrastructure/persistence/schemas/email-account.schema';
 import { EmailAccountRepository } from './infrastructure/persistence/repositories/email-account.repository';
 import { CommandHandlers } from './application/commands';
 import { QueryHandlers } from './application/queries';
@@ -30,9 +27,7 @@ import { QueryHandlers } from './application/queries';
       inject: [ConfigService],
       useFactory: getMongooseConfig,
     }),
-    MongooseModule.forFeature([
-      { name: EmailAccountSchema.name, schema: EmailAccountSchemaDefinition },
-    ]),
+    MongooseModule.forFeature([{ name: EmailAccountSchema.name, schema: EmailAccountSchemaDefinition }]),
     CqrsModule,
     EventBusModule,
   ],

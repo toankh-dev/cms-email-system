@@ -91,7 +91,7 @@ export class UserRepository implements IUserRepository {
       skip: offset,
     });
 
-    return userEntities.map((entity) => UserMapper.toDomain(entity));
+    return userEntities.map(entity => UserMapper.toDomain(entity));
   }
 
   async count(): Promise<number> {

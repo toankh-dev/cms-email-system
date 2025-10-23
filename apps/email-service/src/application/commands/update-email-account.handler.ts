@@ -4,17 +4,14 @@ import { UpdateEmailAccountCommand } from './update-email-account.command';
 import { IEmailAccountRepository } from '../../domain/repositories/email-account.repository.interface';
 
 @CommandHandler(UpdateEmailAccountCommand)
-export class UpdateEmailAccountHandler
-  implements ICommandHandler<UpdateEmailAccountCommand>
-{
+export class UpdateEmailAccountHandler implements ICommandHandler<UpdateEmailAccountCommand> {
   constructor(
     @Inject('IEmailAccountRepository')
     private readonly repository: IEmailAccountRepository,
   ) {}
 
   async execute(command: UpdateEmailAccountCommand): Promise<{ success: boolean }> {
-    const { emailAccountId, userId, displayName, smtpConfig, imapConfig } =
-      command;
+    const { emailAccountId, userId, displayName, smtpConfig, imapConfig } = command;
 
     // Find email account
     const account = await this.repository.findById(emailAccountId);

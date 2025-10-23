@@ -65,12 +65,7 @@ export class User extends AggregateRoot<string> {
   /**
    * Factory method to create a new User
    */
-  static async create(
-    email: Email,
-    plainPassword: string,
-    fullName: string,
-    role: UserRole = UserRole.USER,
-  ): Promise<User> {
+  static async create(email: Email, plainPassword: string, fullName: string, role: UserRole = UserRole.USER): Promise<User> {
     const id = randomUUID();
     const password = await Password.create(plainPassword);
     const emailVerificationToken = randomUUID();
@@ -161,12 +156,10 @@ export class User extends AggregateRoot<string> {
     }
 
     // Revoke old expired tokens
-    this.refreshTokens
-      .filter((token) => token.isExpired())
-      .forEach((token) => token.revoke());
+    this.refreshTokens.filter(token => token.isExpired()).forEach(token => token.revoke());
 
     // Limit to 5 active refresh tokens per user
-    const activeTokens = this.refreshTokens.filter((token) => token.isValid());
+    const activeTokens = this.refreshTokens.filter(token => token.isValid());
     if (activeTokens.length >= 5) {
       // Revoke oldest token
       activeTokens[0].revoke();
@@ -183,9 +176,7 @@ export class User extends AggregateRoot<string> {
    * Validate and get refresh token
    */
   validateRefreshToken(tokenValue: string): RefreshToken | null {
-    const token = this.refreshTokens.find(
-      (t) => t.getToken() === tokenValue && t.isValid(),
-    );
+    const token = this.refreshTokens.find(t => t.getToken() === tokenValue && t.isValid());
 
     return token || null;
   }
@@ -194,7 +185,7 @@ export class User extends AggregateRoot<string> {
    * Revoke specific refresh token
    */
   revokeRefreshToken(tokenValue: string): void {
-    const token = this.refreshTokens.find((t) => t.getToken() === tokenValue);
+    const token = this.refreshTokens.find(t => t.getToken() === tokenValue);
 
     if (!token) {
       throw new Error('Refresh token not found');
@@ -208,7 +199,7 @@ export class User extends AggregateRoot<string> {
    * Revoke all refresh tokens (logout from all devices)
    */
   revokeAllRefreshTokens(): void {
-    this.refreshTokens.forEach((token) => {
+    this.refreshTokens.forEach(token => {
       if (token.isValid()) {
         token.revoke();
       }
@@ -219,12 +210,8 @@ export class User extends AggregateRoot<string> {
   /**
    * Change password
    */
-  async changePassword(
-    currentPassword: string,
-    newPassword: string,
-  ): Promise<void> {
-    const isCurrentPasswordValid =
-      await this.password.compare(currentPassword);
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    const isCurrentPasswordValid = await this.password.compare(currentPassword);
 
     if (!isCurrentPasswordValid) {
       throw new Error('Current password is incorrect');

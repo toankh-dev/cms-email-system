@@ -1,8 +1,5 @@
 import { Email } from '@app/domain/value-objects/email.vo';
-import {
-  EmailAccount,
-  EmailAccountStatus,
-} from '../../../domain/models/email-account.aggregate';
+import { EmailAccount, EmailAccountStatus } from '../../../domain/models/email-account.aggregate';
 import { EmailCredentials } from '../../../domain/value-objects/email-credentials.vo';
 import { EmailAccountDocument } from '../schemas/email-account.schema';
 
@@ -36,12 +33,9 @@ export class EmailAccountMapper {
    */
   static toDomain(doc: EmailAccountDocument): EmailAccount {
     const emailVo = Email.create(doc.email);
-    const credentials = EmailCredentials.create(
-      doc.credentials.username,
-      doc.credentials.password,
-    );
+    const credentials = EmailCredentials.create(doc.credentials.username, doc.credentials.password);
 
-    return EmailAccount.reconstitute(doc._id.toString(), {
+    return EmailAccount.reconstitute(doc.id, {
       userId: doc.userId,
       email: emailVo,
       displayName: doc.displayName,

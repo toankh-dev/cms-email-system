@@ -26,25 +26,13 @@ export class RefreshToken extends Entity<string> {
     return new RefreshToken(id, token, expiresAt);
   }
 
-  static fromPersistence(
-    id: string,
-    token: string,
-    expiresAt: Date,
-    isRevoked: boolean,
-  ): RefreshToken {
+  static fromPersistence(id: string, token: string, expiresAt: Date, isRevoked: boolean): RefreshToken {
     const refreshToken = new RefreshToken(id, token, expiresAt);
     refreshToken.isRevoked = isRevoked;
     return refreshToken;
   }
 
-  static reconstitute(
-    id: string,
-    token: string,
-    expiresAt: Date,
-    isRevoked: boolean,
-    createdAt: Date,
-    updatedAt: Date,
-  ): RefreshToken {
+  static reconstitute(id: string, token: string, expiresAt: Date, isRevoked: boolean, createdAt: Date, updatedAt: Date): RefreshToken {
     const refreshToken = new RefreshToken(id, token, expiresAt);
     refreshToken.isRevoked = isRevoked;
     refreshToken._createdAt = createdAt;

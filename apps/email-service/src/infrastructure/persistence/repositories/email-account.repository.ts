@@ -3,10 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { IEmailAccountRepository } from '../../../domain/repositories/email-account.repository.interface';
 import { EmailAccount } from '../../../domain/models/email-account.aggregate';
-import {
-  EmailAccountSchema,
-  EmailAccountDocument,
-} from '../schemas/email-account.schema';
+import { EmailAccountSchema, EmailAccountDocument } from '../schemas/email-account.schema';
 import { EmailAccountMapper } from '../mappers/email-account.mapper';
 
 @Injectable()
@@ -19,14 +16,10 @@ export class EmailAccountRepository implements IEmailAccountRepository {
   async save(account: EmailAccount): Promise<EmailAccount> {
     const doc = EmailAccountMapper.toPersistence(account);
 
-    const saved = await this.emailAccountModel.findByIdAndUpdate(
-      account.id,
-      doc,
-      {
-        upsert: true,
-        new: true,
-      },
-    );
+    const saved = await this.emailAccountModel.findByIdAndUpdate(account.id, doc, {
+      upsert: true,
+      new: true,
+    });
 
     return EmailAccountMapper.toDomain(saved);
   }
@@ -38,7 +31,7 @@ export class EmailAccountRepository implements IEmailAccountRepository {
 
   async findByUserId(userId: string): Promise<EmailAccount[]> {
     const docs = await this.emailAccountModel.find({ userId }).exec();
-    return docs.map((doc) => EmailAccountMapper.toDomain(doc));
+    return docs.map(doc => EmailAccountMapper.toDomain(doc));
   }
 
   async findByEmail(userId: string, email: string): Promise<EmailAccount | null> {
@@ -51,9 +44,7 @@ export class EmailAccountRepository implements IEmailAccountRepository {
   }
 
   async findAllActive(): Promise<EmailAccount[]> {
-    const docs = await this.emailAccountModel
-      .find({ status: 'ACTIVE' })
-      .exec();
-    return docs.map((doc) => EmailAccountMapper.toDomain(doc));
+    const docs = await this.emailAccountModel.find({ status: 'ACTIVE' }).exec();
+    return docs.map(doc => EmailAccountMapper.toDomain(doc));
   }
 }

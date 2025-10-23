@@ -1,33 +1,9 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Patch,
-  Delete,
-  Body,
-  Param,
-  HttpCode,
-  HttpStatus,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Body, Param, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiParam,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { CreateEmailAccountDto, UpdateEmailAccountDto } from '../dtos';
-import {
-  CreateEmailAccountCommand,
-  UpdateEmailAccountCommand,
-  DeleteEmailAccountCommand,
-} from '../../application/commands';
-import {
-  GetEmailAccountByIdQuery,
-  GetUserEmailAccountsQuery,
-} from '../../application/queries';
+import { CreateEmailAccountCommand, UpdateEmailAccountCommand, DeleteEmailAccountCommand } from '../../application/commands';
+import { GetEmailAccountByIdQuery, GetUserEmailAccountsQuery } from '../../application/queries';
 
 /**
  * Email Account Controller
@@ -59,15 +35,7 @@ export class EmailAccountController {
     const userId = 'temp-user-id';
 
     const result = await this.commandBus.execute(
-      new CreateEmailAccountCommand(
-        userId,
-        dto.email,
-        dto.displayName,
-        dto.username,
-        dto.password,
-        dto.smtpConfig,
-        dto.imapConfig,
-      ),
+      new CreateEmailAccountCommand(userId, dto.email, dto.displayName, dto.username, dto.password, dto.smtpConfig, dto.imapConfig),
     );
 
     return {
@@ -82,15 +50,12 @@ export class EmailAccountController {
     status: 200,
     description: 'List of email accounts retrieved successfully',
   })
-  async getUserEmailAccounts(
+  async getUserEmailAccounts() {
     // @CurrentUser('sub') userId: string, // TODO: Get from JWT token
-  ) {
     // Temporary: hardcoded userId for development
     const userId = 'temp-user-id';
 
-    const accounts = await this.queryBus.execute(
-      new GetUserEmailAccountsQuery(userId),
-    );
+    const accounts = await this.queryBus.execute(new GetUserEmailAccountsQuery(userId));
 
     return {
       message: 'Email accounts retrieved successfully',
@@ -114,9 +79,7 @@ export class EmailAccountController {
     // Temporary: hardcoded userId for development
     const userId = 'temp-user-id';
 
-    const account = await this.queryBus.execute(
-      new GetEmailAccountByIdQuery(emailAccountId, userId),
-    );
+    const account = await this.queryBus.execute(new GetEmailAccountByIdQuery(emailAccountId, userId));
 
     return {
       message: 'Email account retrieved successfully',
@@ -141,15 +104,7 @@ export class EmailAccountController {
     // Temporary: hardcoded userId for development
     const userId = 'temp-user-id';
 
-    await this.commandBus.execute(
-      new UpdateEmailAccountCommand(
-        emailAccountId,
-        userId,
-        dto.displayName,
-        dto.smtpConfig,
-        dto.imapConfig,
-      ),
-    );
+    await this.commandBus.execute(new UpdateEmailAccountCommand(emailAccountId, userId, dto.displayName, dto.smtpConfig, dto.imapConfig));
 
     return {
       message: 'Email account updated successfully',
@@ -172,9 +127,7 @@ export class EmailAccountController {
     // Temporary: hardcoded userId for development
     const userId = 'temp-user-id';
 
-    await this.commandBus.execute(
-      new DeleteEmailAccountCommand(emailAccountId, userId),
-    );
+    await this.commandBus.execute(new DeleteEmailAccountCommand(emailAccountId, userId));
 
     return {
       message: 'Email account deleted successfully',

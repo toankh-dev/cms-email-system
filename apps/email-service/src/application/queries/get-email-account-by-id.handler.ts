@@ -4,9 +4,7 @@ import { GetEmailAccountByIdQuery } from './get-email-account-by-id.query';
 import { IEmailAccountRepository } from '../../domain/repositories/email-account.repository.interface';
 
 @QueryHandler(GetEmailAccountByIdQuery)
-export class GetEmailAccountByIdHandler
-  implements IQueryHandler<GetEmailAccountByIdQuery>
-{
+export class GetEmailAccountByIdHandler implements IQueryHandler<GetEmailAccountByIdQuery> {
   constructor(
     @Inject('IEmailAccountRepository')
     private readonly repository: IEmailAccountRepository,

@@ -4,9 +4,7 @@ import { UpdateProfileCommand } from './update-profile.command';
 import { IUserRepository } from '../../domain/repositories/user.repository.interface';
 
 @CommandHandler(UpdateProfileCommand)
-export class UpdateProfileHandler
-  implements ICommandHandler<UpdateProfileCommand>
-{
+export class UpdateProfileHandler implements ICommandHandler<UpdateProfileCommand> {
   constructor(
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,

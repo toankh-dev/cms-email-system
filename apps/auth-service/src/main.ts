@@ -41,12 +41,8 @@ async function bootstrap() {
   SwaggerModule.setup('api/auth/docs', app, document);
 
   await app.listen(port);
-  logger.log(
-    `🔐 Auth Service is running on: http://localhost:${port}/api/auth`,
-  );
-  logger.log(
-    `📚 Swagger docs available at: http://localhost:${port}/api/auth/docs`,
-  );
+  logger.log(`🔐 Auth Service is running on: http://localhost:${port}/api/auth`);
+  logger.log(`📚 Swagger docs available at: http://localhost:${port}/api/auth/docs`);
 }
 
 bootstrap();

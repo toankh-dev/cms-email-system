@@ -9,8 +9,4 @@ import { CreateEmailAccountHandler } from './create-email-account.handler';
 import { UpdateEmailAccountHandler } from './update-email-account.handler';
 import { DeleteEmailAccountHandler } from './delete-email-account.handler';
 
-export const CommandHandlers = [
-  CreateEmailAccountHandler,
-  UpdateEmailAccountHandler,
-  DeleteEmailAccountHandler,
-];
+export const CommandHandlers = [CreateEmailAccountHandler, UpdateEmailAccountHandler, DeleteEmailAccountHandler];

@@ -35,9 +35,7 @@ export class Password extends ValueObject<PasswordProps> {
    */
   static async create(plainPassword: string): Promise<Password> {
     if (!this.isValid(plainPassword)) {
-      throw new Error(
-        `Password must be at least ${this.MIN_LENGTH} characters long`,
-      );
+      throw new Error(`Password must be at least ${this.MIN_LENGTH} characters long`);
     }
 
     const hashedPassword = await bcrypt.hash(plainPassword, this.SALT_ROUNDS);

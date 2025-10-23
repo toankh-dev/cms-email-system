@@ -5,9 +5,7 @@ import { IUserRepository } from '../../domain/repositories/user.repository.inter
 import { JwtService } from '@nestjs/jwt';
 
 @CommandHandler(RefreshTokenCommand)
-export class RefreshTokenHandler
-  implements ICommandHandler<RefreshTokenCommand>
-{
+export class RefreshTokenHandler implements ICommandHandler<RefreshTokenCommand> {
   constructor(
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,

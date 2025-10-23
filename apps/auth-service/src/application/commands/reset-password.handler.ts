@@ -4,9 +4,7 @@ import { ResetPasswordCommand } from './reset-password.command';
 import { IUserRepository } from '../../domain/repositories/user.repository.interface';
 
 @CommandHandler(ResetPasswordCommand)
-export class ResetPasswordHandler
-  implements ICommandHandler<ResetPasswordCommand>
-{
+export class ResetPasswordHandler implements ICommandHandler<ResetPasswordCommand> {
   constructor(
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,

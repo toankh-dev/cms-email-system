@@ -12,7 +12,7 @@ export class RefreshTokenEntity {
   @Column({ name: 'user_id' })
   userId: string;
 
-  @ManyToOne(() => UserEntity, (user) => user.refreshTokens, {
+  @ManyToOne(() => UserEntity, user => user.refreshTokens, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'user_id' })
@@ -24,9 +24,17 @@ export class RefreshTokenEntity {
   @Column({ name: 'is_revoked', default: false })
   isRevoked: boolean;
 
-  @Column({ name: 'created_at', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    name: 'created_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   createdAt: Date;
 
-  @Column({ name: 'updated_at', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    name: 'updated_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   updatedAt: Date;
 }

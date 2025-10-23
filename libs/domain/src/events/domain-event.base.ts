@@ -10,12 +10,7 @@ export abstract class DomainEvent {
   public readonly correlationId?: string;
   public readonly causationId?: string;
 
-  constructor(
-    aggregateId: string,
-    eventType: string,
-    correlationId?: string,
-    causationId?: string,
-  ) {
+  constructor(aggregateId: string, eventType: string, correlationId?: string, causationId?: string) {
     this.id = this.generateId();
     this.occurredOn = new Date();
     this.eventType = eventType;

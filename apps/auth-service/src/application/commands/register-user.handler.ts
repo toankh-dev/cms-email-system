@@ -7,9 +7,7 @@ import { Email } from '@app/domain/value-objects/email.vo';
 import { EventBusService } from '@app/infrastructure/messaging/event-bus.service';
 
 @CommandHandler(RegisterUserCommand)
-export class RegisterUserHandler
-  implements ICommandHandler<RegisterUserCommand>
-{
+export class RegisterUserHandler implements ICommandHandler<RegisterUserCommand> {
   constructor(
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,
@@ -43,7 +41,7 @@ export class RegisterUserHandler
 
     return {
       userId: user.id,
-      emailVerificationToken: user.getEmailVerificationToken()!,
+      emailVerificationToken: user.getEmailVerificationToken(),
     };
   }
 }

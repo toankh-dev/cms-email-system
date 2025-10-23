@@ -26,7 +26,7 @@ export class UserMapper {
     entity.updatedAt = user.updatedAt;
 
     // Map refresh tokens
-    entity.refreshTokens = user.getRefreshTokens().map((token) => {
+    entity.refreshTokens = user.getRefreshTokens().map(token => {
       const tokenEntity = new RefreshTokenEntity();
       tokenEntity.id = token.id;
       tokenEntity.token = token.getToken();
@@ -48,7 +48,7 @@ export class UserMapper {
     const email = Email.create(entity.email);
     const password = Password.fromHash(entity.password);
 
-    const refreshTokens = (entity.refreshTokens || []).map((tokenEntity) =>
+    const refreshTokens = (entity.refreshTokens || []).map(tokenEntity =>
       RefreshToken.reconstitute(
         tokenEntity.id,
         tokenEntity.token,

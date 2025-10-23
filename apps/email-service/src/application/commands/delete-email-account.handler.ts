@@ -4,9 +4,7 @@ import { DeleteEmailAccountCommand } from './delete-email-account.command';
 import { IEmailAccountRepository } from '../../domain/repositories/email-account.repository.interface';
 
 @CommandHandler(DeleteEmailAccountCommand)
-export class DeleteEmailAccountHandler
-  implements ICommandHandler<DeleteEmailAccountCommand>
-{
+export class DeleteEmailAccountHandler implements ICommandHandler<DeleteEmailAccountCommand> {
   constructor(
     @Inject('IEmailAccountRepository')
     private readonly repository: IEmailAccountRepository,

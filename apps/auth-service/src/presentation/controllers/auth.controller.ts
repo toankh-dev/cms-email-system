@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Get,
-  Patch,
-  UseGuards,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
+import { Controller, Post, Body, Get, Patch, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import {
@@ -48,9 +39,7 @@ export class AuthController {
   @ApiResponse({ status: 201, description: 'User registered successfully' })
   @ApiResponse({ status: 409, description: 'Email already exists' })
   async register(@Body() dto: RegisterDto) {
-    const result = await this.commandBus.execute(
-      new RegisterUserCommand(dto.email, dto.password, dto.fullName),
-    );
+    const result = await this.commandBus.execute(new RegisterUserCommand(dto.email, dto.password, dto.fullName));
 
     return {
       message: 'User registered successfully. Please verify your email.',
@@ -67,9 +56,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Login successful' })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() dto: LoginDto) {
-    const result = await this.commandBus.execute(
-      new LoginUserCommand(dto.email, dto.password),
-    );
+    const result = await this.commandBus.execute(new LoginUserCommand(dto.email, dto.password));
 
     return {
       message: 'Login successful',
@@ -84,9 +71,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Token refreshed successfully' })
   @ApiResponse({ status: 401, description: 'Invalid refresh token' })
   async refreshToken(@Body() dto: RefreshTokenDto) {
-    const result = await this.commandBus.execute(
-      new RefreshTokenCommand(dto.refreshToken),
-    );
+    const result = await this.commandBus.execute(new RefreshTokenCommand(dto.refreshToken));
 
     return {
       message: 'Token refreshed successfully',
@@ -130,13 +115,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Update user profile' })
   @ApiResponse({ status: 200, description: 'Profile updated successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async updateProfile(
-    @CurrentUser('sub') userId: string,
-    @Body() dto: UpdateProfileDto,
-  ) {
-    const result = await this.commandBus.execute(
-      new UpdateProfileCommand(userId, dto.fullName),
-    );
+  async updateProfile(@CurrentUser('sub') userId: string, @Body() dto: UpdateProfileDto) {
+    const result = await this.commandBus.execute(new UpdateProfileCommand(userId, dto.fullName));
 
     return {
       message: 'Profile updated successfully',
@@ -151,13 +131,8 @@ export class AuthController {
   @ApiOperation({ summary: 'Change user password' })
   @ApiResponse({ status: 200, description: 'Password changed successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async changePassword(
-    @CurrentUser('sub') userId: string,
-    @Body() dto: ChangePasswordDto,
-  ) {
-    await this.commandBus.execute(
-      new ChangePasswordCommand(userId, dto.currentPassword, dto.newPassword),
-    );
+  async changePassword(@CurrentUser('sub') userId: string, @Body() dto: ChangePasswordDto) {
+    await this.commandBus.execute(new ChangePasswordCommand(userId, dto.currentPassword, dto.newPassword));
 
     return {
       message: 'Password changed successfully',
@@ -174,9 +149,7 @@ export class AuthController {
   })
   @ApiResponse({ status: 404, description: 'User not found' })
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
-    const result = await this.commandBus.execute(
-      new ForgotPasswordCommand(dto.email),
-    );
+    const result = await this.commandBus.execute(new ForgotPasswordCommand(dto.email));
 
     return {
       message: 'Password reset instructions sent to your email',
@@ -192,9 +165,7 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Password reset successfully' })
   @ApiResponse({ status: 400, description: 'Invalid or expired token' })
   async resetPassword(@Body() dto: ResetPasswordDto) {
-    await this.commandBus.execute(
-      new ResetPasswordCommand(dto.token, dto.newPassword),
-    );
+    await this.commandBus.execute(new ResetPasswordCommand(dto.token, dto.newPassword));
 
     return {
       message: 'Password reset successfully',

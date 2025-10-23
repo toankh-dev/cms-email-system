@@ -5,9 +5,7 @@ import { IUserRepository } from '../../domain/repositories/user.repository.inter
 import { EventBusService } from '@app/infrastructure/messaging/event-bus.service';
 
 @CommandHandler(ChangePasswordCommand)
-export class ChangePasswordHandler
-  implements ICommandHandler<ChangePasswordCommand>
-{
+export class ChangePasswordHandler implements ICommandHandler<ChangePasswordCommand> {
   constructor(
     @Inject('IUserRepository')
     private readonly userRepository: IUserRepository,

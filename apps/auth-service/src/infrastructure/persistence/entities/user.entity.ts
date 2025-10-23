@@ -21,7 +21,7 @@ export class UserEntity {
   @Column({ type: 'varchar', length: 20 })
   status: string;
 
-  @OneToMany(() => RefreshTokenEntity, (token) => token.user, {
+  @OneToMany(() => RefreshTokenEntity, token => token.user, {
     cascade: true,
   })
   refreshTokens: RefreshTokenEntity[];
@@ -41,9 +41,17 @@ export class UserEntity {
   @Column({ name: 'password_reset_expires', type: 'timestamp', nullable: true })
   passwordResetExpires: Date | null;
 
-  @Column({ name: 'created_at', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    name: 'created_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   createdAt: Date;
 
-  @Column({ name: 'updated_at', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    name: 'updated_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   updatedAt: Date;
 }

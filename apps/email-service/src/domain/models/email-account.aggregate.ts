@@ -113,7 +113,7 @@ export class EmailAccount extends AggregateRoot<string> {
   /**
    * Test connection and activate account
    */
-  async activate(): Promise<void> {
+  activate(): void {
     this.status = EmailAccountStatus.ACTIVE;
     this.errorMessage = undefined;
     this.touch();
@@ -131,11 +131,7 @@ export class EmailAccount extends AggregateRoot<string> {
   /**
    * Update account configuration
    */
-  updateConfig(
-    displayName: string,
-    smtpConfig: SmtpConfig,
-    imapConfig: ImapConfig,
-  ): void {
+  updateConfig(displayName: string, smtpConfig: SmtpConfig, imapConfig: ImapConfig): void {
     this.displayName = displayName;
     this.smtpConfig = smtpConfig;
     this.imapConfig = imapConfig;

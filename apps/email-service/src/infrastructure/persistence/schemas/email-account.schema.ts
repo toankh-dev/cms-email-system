@@ -1,13 +1,15 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
-export type EmailAccountDocument = EmailAccountSchema & Document;
+export type EmailAccountDocument = EmailAccountSchema & Omit<Document, 'id'>;
 
 @Schema({
   collection: 'email_accounts',
   timestamps: true,
 })
 export class EmailAccountSchema {
+  id: string;
+
   @Prop({ required: true, index: true })
   userId: string;
 
@@ -71,8 +73,16 @@ export class EmailAccountSchema {
   errorMessage?: string;
 }
 
-export const EmailAccountSchemaDefinition =
-  SchemaFactory.createForClass(EmailAccountSchema);
+export const EmailAccountSchemaDefinition = SchemaFactory.createForClass(EmailAccountSchema);
+
+EmailAccountSchemaDefinition.set('toJSON', {
+  virtuals: true,
+  transform: (doc, ret) => {
+    ret.id = ret._id.toString();
+    delete ret._id;
+    delete ret.__v;
+  },
+});
 
 // Create compound index for userId + email (unique)
 EmailAccountSchemaDefinition.index({ userId: 1, email: 1 }, { unique: true });

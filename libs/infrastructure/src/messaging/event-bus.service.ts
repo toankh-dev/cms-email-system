@@ -9,8 +9,7 @@ import { DomainEvent } from '@app/domain';
 @Injectable()
 export class EventBusService {
   private readonly logger = new Logger(EventBusService.name);
-  private handlers: Map<string, Array<(event: DomainEvent) => void>> =
-    new Map();
+  private handlers: Map<string, Array<(event: DomainEvent) => void>> = new Map();
 
   /**
    * Publish a domain event
@@ -24,9 +23,7 @@ export class EventBusService {
       try {
         await handler(event);
       } catch (error) {
-        this.logger.error(
-          `Error handling event ${event.eventType}: ${error.message}`,
-        );
+        this.logger.error(`Error handling event ${event.eventType}: ${error.message}`);
       }
     }
   }

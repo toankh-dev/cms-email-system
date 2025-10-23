@@ -6,7 +6,4 @@ export * from './get-user-email-accounts.handler';
 import { GetEmailAccountByIdHandler } from './get-email-account-by-id.handler';
 import { GetUserEmailAccountsHandler } from './get-user-email-accounts.handler';
 
-export const QueryHandlers = [
-  GetEmailAccountByIdHandler,
-  GetUserEmailAccountsHandler,
-];
+export const QueryHandlers = [GetEmailAccountByIdHandler, GetUserEmailAccountsHandler];

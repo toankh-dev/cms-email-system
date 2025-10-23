@@ -6,9 +6,7 @@ import { IEmailAccountRepository } from '../../domain/repositories/email-account
 import { EmailAccount } from '../../domain/models/email-account.aggregate';
 
 @CommandHandler(CreateEmailAccountCommand)
-export class CreateEmailAccountHandler
-  implements ICommandHandler<CreateEmailAccountCommand>
-{
+export class CreateEmailAccountHandler implements ICommandHandler<CreateEmailAccountCommand> {
   constructor(
     @Inject('IEmailAccountRepository')
     private readonly repository: IEmailAccountRepository,
@@ -18,35 +16,16 @@ export class CreateEmailAccountHandler
     emailAccountId: string;
     email: string;
   }> {
-    const {
-      userId,
-      email,
-      displayName,
-      username,
-      password,
-      smtpConfig,
-      imapConfig,
-    } = command;
+    const { userId, email, displayName, username, password, smtpConfig, imapConfig } = command;
 
     // Check if email account already exists for this user
     const existing = await this.repository.findByEmail(userId, email);
     if (existing) {
-      throw new ConflictException(
-        'Email account already exists for this user',
-      );
+      throw new ConflictException('Email account already exists for this user');
     }
 
     // Create new email account aggregate
-    const account = EmailAccount.create(
-      randomUUID(),
-      userId,
-      email,
-      displayName,
-      username,
-      password,
-      smtpConfig,
-      imapConfig,
-    );
+    const account = EmailAccount.create(randomUUID(), userId, email, displayName, username, password, smtpConfig, imapConfig);
 
     // Save to repository
     await this.repository.save(account);
