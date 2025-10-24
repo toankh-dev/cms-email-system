@@ -3,7 +3,12 @@ import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { CreateEmailAccountDto, UpdateEmailAccountDto } from '../dtos';
 import { TestConnectionDto } from '../dtos/test-connection.dto';
-import { CreateEmailAccountCommand, UpdateEmailAccountCommand, DeleteEmailAccountCommand, TestConnectionCommand } from '../../application/commands';
+import {
+  CreateEmailAccountCommand,
+  UpdateEmailAccountCommand,
+  DeleteEmailAccountCommand,
+  TestConnectionCommand,
+} from '../../application/commands';
 import { GetEmailAccountByIdQuery, GetUserEmailAccountsQuery } from '../../application/queries';
 
 /**
@@ -28,14 +33,7 @@ export class EmailAccountController {
     description: 'Connection test completed',
   })
   async testConnection(@Body() dto: TestConnectionDto) {
-    const result = await this.commandBus.execute(
-      new TestConnectionCommand(
-        dto.email,
-        dto.password,
-        dto.smtp,
-        dto.imap,
-      ),
-    );
+    const result = await this.commandBus.execute(new TestConnectionCommand(dto.email, dto.password, dto.smtp, dto.imap));
 
     return result;
   }

@@ -1,12 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import {
-  IsString,
-  IsNotEmpty,
-  IsNumber,
-  IsBoolean,
-  Min,
-  Max,
-} from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsBoolean, Min, Max, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class SmtpConfigDto {
   @ApiProperty({ example: 'smtp.gmail.com' })
@@ -54,8 +48,12 @@ export class TestConnectionDto {
   password: string;
 
   @ApiProperty({ type: SmtpConfigDto })
+  @ValidateNested()
+  @Type(() => SmtpConfigDto)
   smtp: SmtpConfigDto;
 
   @ApiProperty({ type: ImapConfigDto })
+  @ValidateNested()
+  @Type(() => ImapConfigDto)
   imap: ImapConfigDto;
 }
