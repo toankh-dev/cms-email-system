@@ -8,6 +8,15 @@ export class EmailMovedEvent extends DomainEvent {
     public readonly fromFolderId: string,
     public readonly toFolderId: string,
   ) {
-    super();
+    super(emailId, 'EmailMoved');
+  }
+
+  getData(): Record<string, any> {
+    return {
+      userId: this.userId,
+      emailAccountId: this.emailAccountId,
+      fromFolderId: this.fromFolderId,
+      toFolderId: this.toFolderId,
+    };
   }
 }

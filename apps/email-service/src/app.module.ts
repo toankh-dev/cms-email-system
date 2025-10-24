@@ -25,6 +25,18 @@ import {
 } from './infrastructure/persistence/schemas/folder.schema';
 import { FolderRepository } from './infrastructure/persistence/repositories/folder.repository';
 
+// Email Module imports
+import { EmailController } from './presentation/controllers/email.controller';
+import {
+  EmailSchema,
+  EmailSchemaDefinition,
+} from './infrastructure/persistence/schemas/email.schema';
+import { EmailRepository } from './infrastructure/persistence/repositories/email.repository';
+
+// Mail Services
+import { SmtpService } from './infrastructure/mail/smtp.service';
+import { ImapService } from './infrastructure/mail/imap.service';
+
 // CQRS imports
 import { CommandHandlers } from './application/commands';
 import { QueryHandlers } from './application/queries';
@@ -43,11 +55,12 @@ import { QueryHandlers } from './application/queries';
     MongooseModule.forFeature([
       { name: EmailAccountSchema.name, schema: EmailAccountSchemaDefinition },
       { name: FolderSchema.name, schema: FolderSchemaDefinition },
+      { name: EmailSchema.name, schema: EmailSchemaDefinition },
     ]),
     CqrsModule,
     EventBusModule,
   ],
-  controllers: [AppController, EmailAccountController, FolderController],
+  controllers: [AppController, EmailAccountController, FolderController, EmailController],
   providers: [
     AppService,
     // Repositories
@@ -59,6 +72,13 @@ import { QueryHandlers } from './application/queries';
       provide: 'IFolderRepository',
       useClass: FolderRepository,
     },
+    {
+      provide: 'IEmailRepository',
+      useClass: EmailRepository,
+    },
+    // Mail Services
+    SmtpService,
+    ImapService,
     // CQRS Handlers
     ...CommandHandlers,
     ...QueryHandlers,

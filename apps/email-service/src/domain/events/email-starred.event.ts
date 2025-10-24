@@ -7,6 +7,14 @@ export class EmailStarredEvent extends DomainEvent {
     public readonly emailAccountId: string,
     public readonly isStarred: boolean,
   ) {
-    super();
+    super(emailId, 'EmailStarred');
+  }
+
+  getData(): Record<string, any> {
+    return {
+      userId: this.userId,
+      emailAccountId: this.emailAccountId,
+      isStarred: this.isStarred,
+    };
   }
 }

@@ -7,6 +7,14 @@ export class EmailDraftedEvent extends DomainEvent {
     public readonly emailAccountId: string,
     public readonly subject: string,
   ) {
-    super();
+    super(emailId, 'EmailDrafted');
+  }
+
+  getData(): Record<string, any> {
+    return {
+      userId: this.userId,
+      emailAccountId: this.emailAccountId,
+      subject: this.subject,
+    };
   }
 }

@@ -17,6 +17,11 @@ export abstract class Entity<T> {
     return this._id;
   }
 
+  // Method version of getter for consistency
+  getId(): T {
+    return this._id;
+  }
+
   get createdAt(): Date {
     return this._createdAt;
   }

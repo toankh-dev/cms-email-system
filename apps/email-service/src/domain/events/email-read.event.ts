@@ -6,6 +6,13 @@ export class EmailReadEvent extends DomainEvent {
     public readonly userId: string,
     public readonly emailAccountId: string,
   ) {
-    super();
+    super(emailId, 'EmailRead');
+  }
+
+  getData(): Record<string, any> {
+    return {
+      userId: this.userId,
+      emailAccountId: this.emailAccountId,
+    };
   }
 }

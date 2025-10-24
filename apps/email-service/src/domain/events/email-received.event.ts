@@ -8,6 +8,15 @@ export class EmailReceivedEvent extends DomainEvent {
     public readonly senderEmail: string,
     public readonly subject: string,
   ) {
-    super();
+    super(emailId, 'EmailReceived');
+  }
+
+  getData(): Record<string, any> {
+    return {
+      userId: this.userId,
+      emailAccountId: this.emailAccountId,
+      senderEmail: this.senderEmail,
+      subject: this.subject,
+    };
   }
 }
