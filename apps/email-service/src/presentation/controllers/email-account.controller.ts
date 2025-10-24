@@ -2,7 +2,8 @@ import { Controller, Post, Get, Patch, Delete, Body, Param, HttpCode, HttpStatus
 import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { CreateEmailAccountDto, UpdateEmailAccountDto } from '../dtos';
-import { CreateEmailAccountCommand, UpdateEmailAccountCommand, DeleteEmailAccountCommand } from '../../application/commands';
+import { TestConnectionDto } from '../dtos/test-connection.dto';
+import { CreateEmailAccountCommand, UpdateEmailAccountCommand, DeleteEmailAccountCommand, TestConnectionCommand } from '../../application/commands';
 import { GetEmailAccountByIdQuery, GetUserEmailAccountsQuery } from '../../application/queries';
 
 /**
@@ -18,6 +19,26 @@ export class EmailAccountController {
     private readonly commandBus: CommandBus,
     private readonly queryBus: QueryBus,
   ) {}
+
+  @Post('test-connection')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Test SMTP and IMAP connection' })
+  @ApiResponse({
+    status: 200,
+    description: 'Connection test completed',
+  })
+  async testConnection(@Body() dto: TestConnectionDto) {
+    const result = await this.commandBus.execute(
+      new TestConnectionCommand(
+        dto.email,
+        dto.password,
+        dto.smtp,
+        dto.imap,
+      ),
+    );
+
+    return result;
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

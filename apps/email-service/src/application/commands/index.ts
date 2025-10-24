@@ -5,6 +5,8 @@ export * from './update-email-account.command';
 export * from './update-email-account.handler';
 export * from './delete-email-account.command';
 export * from './delete-email-account.handler';
+export * from './test-connection.command';
+export * from './test-connection.handler';
 
 // Folder Commands
 export * from './initialize-folders.command';
@@ -31,6 +33,7 @@ export * from './move-email.handler';
 import { CreateEmailAccountHandler } from './create-email-account.handler';
 import { UpdateEmailAccountHandler } from './update-email-account.handler';
 import { DeleteEmailAccountHandler } from './delete-email-account.handler';
+import { TestConnectionHandler } from './test-connection.handler';
 import { InitializeFoldersHandler } from './initialize-folders.handler';
 import { CreateFolderHandler } from './create-folder.handler';
 import { UpdateFolderHandler } from './update-folder.handler';
@@ -46,6 +49,7 @@ export const CommandHandlers = [
   CreateEmailAccountHandler,
   UpdateEmailAccountHandler,
   DeleteEmailAccountHandler,
+  TestConnectionHandler,
   // Folder handlers
   InitializeFoldersHandler,
   CreateFolderHandler,
