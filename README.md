@@ -256,13 +256,23 @@ cms-email-system/
 
 ## Documentation
 
-Xem thêm tài liệu chi tiết:
+### 🚀 Quick Start
 
-- [📐 Kiến trúc hệ thống](docs/ARCHITECTURE.md)
-- [🔌 API Design](docs/API_DESIGN.md)
-- [🗄️ Database Schema](docs/DATABASE_SCHEMA.md)
-- [💻 Development Guide](docs/DEVELOPMENT.md)
-- [✨ Features Specification](docs/FEATURES.md)
+1. **[Quick Start Guide](docs/QUICK_START.md)** - Setup environment (10 minutes)
+2. **[Implementation Baseline](docs/IMPLEMENTATION_BASELINE.md)** - Version-based roadmap ⭐
+
+### 📚 Technical Specs
+
+- [Database Schema](docs/DATABASE_SCHEMA.md) - 20 PostgreSQL tables
+- [API Design](docs/API_DESIGN.md) - RESTful endpoints
+- [Architecture](docs/ARCHITECTURE.md) - System design
+- [Features](docs/FEATURES.md) - Requirements
+- [Development Guide](docs/DEVELOPMENT.md) - Best practices
+
+### ☁️ Deployment
+
+- [AWS Hybrid](docs/AWS_HYBRID_ARCHITECTURE.md) - Lambda + Fargate
+- [Comparison](docs/COMPARISON.md) - Architecture options
 
 ## Deployment
 
@@ -306,32 +316,24 @@ docker run -p 3000:3000 --env-file .env cms-email-system
 
 ## Roadmap
 
-### Phase 1 (Q1 2025) - Core Features
-- [x] Project setup & architecture
-- [ ] Authentication & Authorization
-- [ ] Email send/receive (SMTP/IMAP)
-- [ ] Folder management
-- [ ] Basic search
+> **See [Implementation Baseline](docs/IMPLEMENTATION_BASELINE.md) for version-based plan**
 
-### Phase 2 (Q2 2025) - Advanced Features
-- [ ] Contact management
-- [ ] Calendar integration
-- [ ] Labels & filters
-- [ ] Email templates
-- [ ] Attachments handling
+### Version Roadmap
+```
+v0.1.0 ✅ → v0.2.0 🔄 → v0.3.0 → v0.4.0 → v0.5.0 → v1.0.0
+Planning   Auth      Email   Comms    Advanced  Production
+```
 
-### Phase 3 (Q3 2025) - Enterprise Features
-- [ ] Multi-account support
-- [ ] Advanced search & AI
-- [ ] Email analytics
-- [ ] Backup & restore
-- [ ] Admin dashboard
+**Current**: v0.2.0 - Authentication System (Weeks 1-2)
 
-### Phase 4 (Q4 2025) - Optimization
-- [ ] Performance optimization
-- [ ] Mobile app integration
-- [ ] Third-party integrations
-- [ ] Advanced security features
+### Milestones
+
+- **v0.1.0** ✅ - Project foundation complete
+- **v0.2.0** 🔄 - Authentication & user management
+- **v0.3.0** - Email core (SMTP/IMAP, folders)
+- **v0.4.0** - Contacts, calendar, labels, filters
+- **v0.5.0** - Attachments, search, background jobs
+- **v1.0.0** - Production release
 
 ## Contributing
 
